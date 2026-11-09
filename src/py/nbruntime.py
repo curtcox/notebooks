@@ -152,7 +152,7 @@ async def run(source, cell_id, reactive=False, delete=None, kind='python', outpu
             linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)
             tree = ast.parse(transformed, filename=filename)
             if reactive:
-                tree = Locals(tree, cell_id).visit(tree)
+                tree = Locals(transformed, cell_id).visit(tree)
             if tree.body and isinstance(tree.body[-1], ast.Expr) and not source.rstrip().endswith(';'):
                 expr = tree.body.pop()
                 tree.body.append(ast.copy_location(ast.Expr(value=ast.Call(func=ast.Name(id='_nb_display', ctx=ast.Load()), args=[expr.value], keywords=[])), expr))

@@ -85,6 +85,95 @@ class RuntimeTests(unittest.TestCase):
         self.run_cell('_x = 1\nx = _x',id='a',reactive=True)
         self.run_cell('_x = 2\ny = _x',id='b',reactive=True)
         self.assertEqual(runtime.namespace['x'],1);self.assertEqual(runtime.namespace['y'],2)
+    def test_private_nested_scopes_preserve_python_apis(self):
+        source = '''
+_value = 40
+def _helper(_arg=2, *, _extra=0):
+    return _value + _arg + _extra
+class _Example:
+    _value = 7
+    def _method(self, _arg=2):
+        return _helper(_arg=_arg) + self._value
+def factory(_arg):
+    def _nested(*, _increment=1):
+        return _arg + _increment
+    return _nested
+answer = (_helper(_arg=2), _Example()._method(_arg=2), factory(40)(_increment=2))
+'''
+        result = self.run_cell(source, id='a-b', reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], (42, 49, 42))
+        self.run_cell('_value = 100', id='ab', reactive=True)
+        result = self.run_cell('answer = _helper(_arg=2)', id='a-b', reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], 42)
+
+    def test_private_imports_without_references_do_not_leak(self):
+        for id, source in [('a', 'import math as _module\nfrom math import sqrt as _root'),
+                           ('b', 'import json as _module\nfrom json import loads as _root')]:
+            result = self.run_cell(source, id=id, reactive=True)
+            self.assertTrue(result['ok'], result['error'])
+        result = self.run_cell('answer = _root(1764) + _module.floor(0.5)', id='a', reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], 42)
+        self.assertNotIn('_module', runtime.namespace)
+        self.assertNotIn('_root', runtime.namespace)
+
+    def test_private_comprehensions_closures_and_global(self):
+        source = '''
+_items = [1, 2, 3]
+_offset = 40
+functions = [lambda: _i + _offset for _i in _items]
+answer = sum(_i for _i in _items) + (lambda _arg: _arg)(_arg=36)
+def change():
+    global _offset
+    _offset = 39
+change()
+closure_answer = functions[0]()
+def outer():
+    _local = 1
+    def inner():
+        nonlocal _local
+        _local += 1
+        return _local
+    return inner()
+nonlocal_answer = outer()
+'''
+        result = self.run_cell(source, reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], 42)
+        self.assertEqual(runtime.namespace['closure_answer'], 42)
+        self.assertEqual(runtime.namespace['nonlocal_answer'], 2)
+
+    def test_private_pattern_and_exception_bindings(self):
+        result = self.run_cell('''
+match {'x': 42, 'y': 1}:
+    case {'x': _answer, **_rest}:
+        answer = _answer
+try:
+    raise ValueError('private error')
+except ValueError as _caught:
+    message = str(_caught)
+''', reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], 42)
+        self.assertEqual(runtime.namespace['message'], 'private error')
+        self.assertNotIn('_answer', runtime.namespace)
+        self.assertNotIn('_rest', runtime.namespace)
+
+    @unittest.skipIf(sys.version_info < (3, 12), 'Type parameters require Python 3.12.')
+    def test_private_generic_function_and_class(self):
+        result = self.run_cell('''
+_offset = 40
+def _identity[_T](_value: _T) -> _T:
+    return _value
+class _Example[_T]:
+    def _method(self, _value: _T):
+        return _identity(_value=_value) + _offset
+answer = _Example[int]()._method(_value=2)
+''', reactive=True)
+        self.assertTrue(result['ok'], result['error'])
+        self.assertEqual(runtime.namespace['answer'], 42)
     def test_error_and_stop(self):
         self.assertFalse(self.run_cell('1/0')['ok'])
         self.assertTrue(self.run_cell('import marimo as mo\nmo.stop(True)')['stopped'])

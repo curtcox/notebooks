@@ -2,6 +2,8 @@
 
 **Reactive** is the default. A cell defines public names, and other cells depend on those names. Cells run in dependency order, regardless of visual order. A public name has one defining cell; duplicate definitions, cycles and deletion of another cell's name are errors. Names starting with `_` are local to a cell. A failed or stopped cell leaves descendants stale.
 
+Private imports and helper functions stay with their defining cell, including when a helper reads a private global after another cell runs. Function parameters, keyword arguments, class members and nested Python locals keep their normal names. Python's special double-underscore names (such as `__name__`) keep their normal behavior.
+
 Moving a public definition to another cell clears its previous value before the batch starts. Names that replace Python builtins (such as `sum`) still create dependencies. Python `%%sql result` cells participate in the same graph as SQL cells: they depend on referenced notebook dataframes and define the named result.
 
 **Linear** uses one shared namespace and manual execution. Run cells in any order. Counts show execution order; outputs remain until rerun or cleared. A possibly stale hint is advisory. Imported Jupyter files start in linear mode unless their Notebook Online metadata says otherwise.

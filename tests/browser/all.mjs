@@ -35,6 +35,11 @@ try{
   // Public names shadowing builtins still determine reactive execution order.
   await source(code('sum([1,2])')+'\n'+code('sum=lambda values:42'));await run();
   await expect(page.locator('.cell-output').first()).toHaveText('42');
+  // Private globals are isolated without changing keyword parameters or methods.
+  await source(code('import math as _module\n_offset=40\ndef _helper(*, _value=2): return _offset+_value\nclass _Example:\n    def _method(self, _value=2): return _helper(_value=_value)\nanswer=_Example()._method(_value=2)')+'\n'+code('import json as _module\n_offset=100')+'\n'+code('answer'));await run();
+  await expect(page.locator('.cell-output').last()).toHaveText('42');
+  await page.evaluate(()=>NotebookOnline.run(NotebookOnline.model.cells[0].id));
+  await expect(page.locator('.cell-output').last()).toHaveText('42');
   // Python %%sql cells have the same graph bindings as native SQL cells.
   await source(code('int(totals.iloc[0]["total"])')+'\n'+code('%%sql totals\nselect sum(x) as total from df')+'\n'+code('import pandas as pd\ndf=pd.DataFrame({"x":[1,2,3]})'));await run();
   await expect(page.locator('.cell-output').first()).toHaveText('6');

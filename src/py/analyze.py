@@ -110,36 +110,149 @@ def analyze_cells(cells):
 
 
 class Locals(ast.NodeTransformer):
-    def __init__(self, tree, cell_id):
-        self.mapping = {n.id: f'_nb_{re.sub(r"[^a-zA-Z0-9]", "", cell_id)}{n.id}' for n in ast.walk(tree) if isinstance(n, ast.Name) and n.id.startswith('_') and not n.id.startswith('__')}
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name.startswith('_') and not node.name.startswith('__'):
-                self.mapping[node.name] = f'_nb_{re.sub(r"[^a-zA-Z0-9]", "", cell_id)}{node.name}'
+    """Isolate private module names without changing Python's nested-scope APIs."""
+    def __init__(self, source, cell_id):
+        self.scope = symtable.symtable(source, '<cell>', 'exec')
+        self.prefix = f'_nb_{cell_id.encode("utf-8").hex()}'
+        self.comprehension_locals = []
+        self.visited_scopes = set()
+
+    def child_scope(self, node, name, kind='function'):
+        children = list(self.scope.get_children())
+        for child in children:
+            if child.get_type() == 'type parameters':
+                children.extend(child.get_children())
+            if child.get_type() == kind and child.get_name().strip('<>') == name and child.get_lineno() == node.lineno and child.get_id() not in self.visited_scopes:
+                self.visited_scopes.add(child.get_id())
+                return child
+        return None
+
+    def name(self, name):
+        if not name.startswith('_') or name.startswith('__'):
+            return name
+        if any(name in names for names in self.comprehension_locals):
+            return name
+        if self.scope.get_type() == 'module' or self.scope.lookup(name).is_global():
+            return self.prefix + name
+        return name
+
+    def body_scope(self, node, name):
+        previous, locals_ = self.scope, self.comprehension_locals
+        self.scope = self.child_scope(node, name, 'class' if isinstance(node, ast.ClassDef) else 'function')
+        if self.scope is None:
+            self.scope = previous
+            raise ValueError('Cannot isolate this Python scope.')
+        self.comprehension_locals = []
+        try:
+            if isinstance(node, ast.Lambda):
+                node.body = self.visit(node.body)
+            else:
+                body = [self.visit(statement) for statement in node.body]
+                node.body = [item for result in body for item in (result if isinstance(result, list) else [result])]
+        finally:
+            self.scope, self.comprehension_locals = previous, locals_
+        return node
+
     def visit_Name(self, node):
-        node.id = self.mapping.get(node.id, node.id)
+        node.id = self.name(node.id)
         return node
+
+    def arguments(self, args):
+        args.defaults = [self.visit(expr) for expr in args.defaults]
+        args.kw_defaults = [self.visit(expr) if expr else None for expr in args.kw_defaults]
+        for arg in [*args.posonlyargs, *args.args, *args.kwonlyargs, args.vararg, args.kwarg]:
+            if arg and arg.annotation: arg.annotation = self.visit(arg.annotation)
+
     def visit_FunctionDef(self, node):
-        node.name = self.mapping.get(node.name, node.name)
-        return self.generic_visit(node)
+        original = node.name
+        node.name = self.name(original)
+        node.decorator_list = [self.visit(expr) for expr in node.decorator_list]
+        self.comprehension_locals.append({param.name for param in getattr(node, 'type_params', [])})
+        self.arguments(node.args)
+        if node.returns: node.returns = self.visit(node.returns)
+        self.comprehension_locals.pop()
+        return self.body_scope(node, original)
     visit_AsyncFunctionDef = visit_FunctionDef
-    visit_ClassDef = visit_FunctionDef
-    def visit_arg(self, node):
-        node.arg = self.mapping.get(node.arg, node.arg)
+
+    def visit_ClassDef(self, node):
+        original = node.name
+        node.name = self.name(original)
+        node.decorator_list = [self.visit(expr) for expr in node.decorator_list]
+        self.comprehension_locals.append({param.name for param in getattr(node, 'type_params', [])})
+        node.bases = [self.visit(expr) for expr in node.bases]
+        node.keywords = [self.visit(keyword) for keyword in node.keywords]
+        self.comprehension_locals.pop()
+        return self.body_scope(node, original)
+
+    def visit_Lambda(self, node):
+        self.arguments(node.args)
+        return self.body_scope(node, 'lambda')
+
+    def comprehension(self, node):
+        # The outer iterable runs in the enclosing scope. Explicit target scopes
+        # also work on Python versions that inline comprehensions in symtable.
+        node.generators[0].iter = self.visit(node.generators[0].iter)
+        previous = self.scope
+        name = {ast.ListComp: 'listcomp', ast.SetComp: 'setcomp', ast.DictComp: 'dictcomp', ast.GeneratorExp: 'genexpr'}[type(node)]
+        self.scope = self.child_scope(node, name) or previous
+        self.comprehension_locals.append(set())
+        try:
+            for i, generator in enumerate(node.generators):
+                if i: generator.iter = self.visit(generator.iter)
+                self.comprehension_locals[-1].update(n.id for n in ast.walk(generator.target) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store))
+                generator.target = self.visit(generator.target)
+                generator.ifs = [self.visit(expr) for expr in generator.ifs]
+            if isinstance(node, ast.DictComp):
+                node.key, node.value = self.visit(node.key), self.visit(node.value)
+            else:
+                node.elt = self.visit(node.elt)
+        finally:
+            self.comprehension_locals.pop()
+            self.scope = previous
         return node
+    visit_ListComp = comprehension
+    visit_SetComp = comprehension
+    visit_DictComp = comprehension
+    visit_GeneratorExp = comprehension
+
     def visit_Import(self, node):
+        imports = []
         for alias in node.names:
             name = alias.asname or alias.name.split('.')[0]
-            if name in self.mapping:
-                alias.asname = self.mapping[name]
-        return node
+            dotted_root = alias.asname is None and '.' in alias.name
+            renamed = self.name(name)
+            imports.append(ast.copy_location(ast.Import(names=[alias]), node))
+            if renamed != name:
+                alias.asname = renamed
+                if dotted_root:
+                    # An unaliased dotted import binds the root package.
+                    imports.append(ast.copy_location(ast.Import(names=[ast.alias(name=name, asname=renamed)]), node))
+        return imports
+
     def visit_ImportFrom(self, node):
         for alias in node.names:
             name = alias.asname or alias.name
-            alias.asname = self.mapping.get(name, alias.asname)
+            if name != '*':
+                renamed = self.name(name)
+                if renamed != name: alias.asname = renamed
         return node
+
     def visit_Global(self, node):
-        node.names = [self.mapping.get(name, name) for name in node.names]
+        node.names = [self.name(name) for name in node.names]
         return node
+
+    def visit_ExceptHandler(self, node):
+        if node.name: node.name = self.name(node.name)
+        return self.generic_visit(node)
+
+    def visit_MatchAs(self, node):
+        if node.name: node.name = self.name(node.name)
+        return self.generic_visit(node)
+    visit_MatchStar = visit_MatchAs
+
+    def visit_MatchMapping(self, node):
+        if node.rest: node.rest = self.name(node.rest)
+        return self.generic_visit(node)
 
 
 def parse_marimo(source):

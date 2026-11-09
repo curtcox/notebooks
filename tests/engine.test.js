@@ -6,6 +6,21 @@ test('Pyodide persistent namespace, private names, SQL, widgets and matplotlib',
  py.runPython("import sys,os\nsys.path.insert(0,'/opt/notebookonline')\nos.environ['MPLBACKEND']='agg'\nimport nbruntime,analyze,marimo\nitems=[]\nnbruntime.emit=items.append");
  let result=JSON.parse(await py.runPythonAsync("import json\njson.dumps(await nbruntime.run('x = 21', 'a', True))"));assert.equal(result.ok,true);
  result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('x*2', 'b', True))"));assert.equal(result.ok,true);assert.equal(py.runPython("items[-1]['data']['text/plain']"),'42');
+ // Private globals remain cell-local while parameters, class APIs and closures
+ // retain their Python names under the actual pinned interpreter.
+ const privateSource=`import math as _math
+_offset = 40
+def _helper[_T](*, _value: _T=2) -> _T:
+    return _offset + _value
+class _Example:
+    def _method(self, _value=2):
+        return _helper(_value=_value)
+_functions = [lambda: _i + _offset for _i in [1, 2]]
+answer = (_Example()._method(_value=2), _functions[0](), _math.floor(42.5))`;
+ py.globals.set('private_source',privateSource);
+ result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run(private_source, 'a-b', True))"));assert.equal(result.ok,true,result.error);assert.equal(py.runPython("str(nbruntime.namespace['answer'])"),'(42, 42, 42)');
+ result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('_offset=100\\nimport json as _math', 'ab', True))"));assert.equal(result.ok,true,result.error);
+ result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('(_helper(_value=2), _math.floor(42.5))', 'a-b', True))"));assert.equal(result.ok,true,result.error);assert.equal(py.runPython("items[-1]['data']['text/plain']"),'(42, 42)');
  await py.loadPackage(['ipython','duckdb','pandas','matplotlib']);
  result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('import pandas as pd\\ndf=pd.DataFrame({\"x\":[1,2,3]})', 'data', True))"));assert.equal(result.ok,true,result.error);
  result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('select sum(x) as total from df', 'sql', True, [], 'sql', 'result'))"));assert.equal(result.ok,true,result.error);assert.equal(py.runPython("int(nbruntime.namespace['result'].iloc[0]['total'])"),6);
