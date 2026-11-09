@@ -120,7 +120,7 @@ class Locals(ast.NodeTransformer):
     def child_scope(self, node, name, kind='function'):
         children = list(self.scope.get_children())
         for child in children:
-            if child.get_type() == 'type parameters':
+            if child.get_type() in ('type parameter', 'type parameters'):
                 children.extend(child.get_children())
             if child.get_type() == kind and child.get_name().strip('<>') == name and child.get_lineno() == node.lineno and child.get_id() not in self.visited_scopes:
                 self.visited_scopes.add(child.get_id())
