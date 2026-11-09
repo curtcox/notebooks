@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {validateSpec} from '../src/ui/widgets.js';
+test('widget validation refuses executable kinds and unbounded data',()=>{assert.throws(()=>validateSpec({kind:'script'}));assert.throws(()=>validateSpec({kind:'slider',min:10,max:1}));assert.throws(()=>validateSpec({kind:'dropdown',options:Array(1001).fill('x')}));assert.throws(()=>validateSpec({kind:'text',label:'x'.repeat(65537)}));assert.equal(validateSpec({kind:'slider',id:'a:1',min:0,max:10,step:1,value:2}).value,2);});

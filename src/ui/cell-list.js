@@ -23,6 +23,7 @@ export class CellList {
       action('Duplicate',()=>{const next=this.model.duplicate(cell.id);this.onStructure(next.id);});action('Delete',()=>{this.model.remove(cell.id);this.onStructure();});
       action(cell.options.disabled?'Enable':'Disable',()=>{cell.options.disabled=!cell.options.disabled;this.model.revision++;this.onStructure(cell.id);});
       action(cell.options['hide-code']?'Show code':'Hide code',()=>{cell.options['hide-code']=!cell.options['hide-code'];this.onStructure(cell.id);});
+      action('Run all above',()=>this.onRun(null,{ids:this.model.cells.slice(0,index).map(c=>c.id)}));action('Run all below',()=>this.onRun(null,{ids:this.model.cells.slice(index+1).map(c=>c.id)}));
       action('Clear output',()=>{cell.outputs=[];this.update(cell.id);});action('Insert above',()=>{const next=this.model.insert(index);this.onStructure(next.id);});
       action('Ask AI about cell',()=>this.onAsk?.(cell));action('Copy cell link',()=>{const url=new URL(location.href);url.searchParams.set('cell',cell.id);navigator.clipboard.writeText(url.href).catch(()=>{});});
       const deps=el('div',null,'cell-deps'),editor=el('div',null,'cell-editor'),preview=el('div',null,'cell-preview'),output=el('div',null,'cell-output');
@@ -57,7 +58,7 @@ export class CellList {
     view.deps.textContent=this.model.settings.mode==='reactive'&&cell.analysis?`uses ${cell.analysis.refs.join(', ')||'—'} · defines ${cell.analysis.defs.join(', ')||'—'}`:'';
     const markdown=cell.kind==='markdown';view.editor.hidden=markdown||cell.options['hide-code']===true||cell.options.echo===false;view.preview.hidden=!markdown;
     if(markdown){if(/<\/?[a-z][^>]*>/i.test(cell.source)){const html=globalThis.markdownit({html:true}).render(cell.source);view.preview.replaceChildren(htmlFrame(html));}else renderMarkdown(view.preview,cell.source);}
-    view.output.replaceChildren();for(const output of cell.outputs??[])renderOutput(view.output,output,{widget:(container,spec)=>this.onWidget?.(container,spec)});
+    view.output.replaceChildren();for(const output of cell.outputs??[])renderOutput(view.output,output,{widget:(container,spec)=>this.onWidget?.(container,spec,output.kernelGeneration)});
   }
   key(e) {
     if(e.target.closest('.ace_editor,input,textarea,select,button'))return;

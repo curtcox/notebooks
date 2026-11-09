@@ -15,9 +15,9 @@ export function parse(source, previous = []) {
     if (end > 0) { frontMatter = lines.slice(0, end + 1).join('\n'); start = end + 1; }
   }
   const cells = []; let markdown = [];
-  const flush = () => {
+  const flush = (force = false) => {
     const text = markdown.join('\n').replace(/^\n+|\n+$/g, ''); markdown = [];
-    if (text) cells.push(cell('markdown', text));
+    if (text || force) cells.push(cell('markdown', text));
   };
   for (let i = start; i < lines.length; i++) {
     const open = /^( {0,3})(`{3,}|~{3,})\{(python|r|sql|raw)\}\s*$/.exec(lines[i]);
@@ -43,31 +43,33 @@ export function parse(source, previous = []) {
       }
       i = j - 1; continue;
     }
-    if (lines[i] === '<!-- cell -->') flush(); else markdown.push(lines[i]);
+    if (lines[i] === '<!-- cell -->') flush(true); else markdown.push(lines[i]);
   }
   flush();
   const used = new Set();
   cells.forEach((next, index) => {
     const old = previous.find(item => !used.has(item) && item.id === next.options.id) ?? (!next.options.id && previous[index]?.kind === next.kind && !used.has(previous[index]) ? previous[index] : null);
-    if (old) { used.add(old); next.id = old.id; if (old.source === next.source && old.kind === next.kind) Object.assign(next, {outputs: old.outputs, status: old.status, executionCount: old.executionCount, metadata: old.metadata, attachments: old.attachments}); }
+    if (old) { used.add(old); next.id = old.id; Object.assign(next,{metadata:old.metadata,attachments:old.attachments,originalSource:old.originalSource}); if (old.source === next.source && old.kind === next.kind) Object.assign(next, {outputs: old.outputs, status: old.status, executionCount: old.executionCount, metadata: old.metadata, attachments: old.attachments}); }
     if (cells.slice(0, index).some(item => item.id === next.id)) { next.id = newId(); next.options.id = next.id; }
   });
   return {frontMatter, cells};
 }
 export function serialize({frontMatter = '', cells}) {
   const parts = frontMatter ? [frontMatter] : [];
-  let lastKind;
-  for (const item of cells) {
+  for (let i = 0; i < cells.length; i++) {
+    const item = cells[i];
     if (item.kind === 'markdown') {
-      if (lastKind === 'markdown') parts.push('<!-- cell -->');
-      parts.push(item.source);
+      const group = [item.source];
+      while (cells[i+1]?.kind === 'markdown') group.push(cells[++i].source);
+      let text = group.join('\n\n<!-- cell -->\n\n');
+      if (!group.at(-1).trim()) text += '\n<!-- cell -->';
+      parts.push(text);
     } else {
       const longest = Math.max(2, ...(item.source.match(/`+/g) ?? []).map(run => run.length));
       const fence = '`'.repeat(longest + 1);
-      const options = Object.entries(item.options ?? {}).map(([key, value]) => `#| ${key}: ${typeof value === 'string' ? JSON.stringify(value) : JSON.stringify(value)}`).join('\n');
+      const options = Object.entries(item.options ?? {}).map(([key, value]) => `#| ${key}: ${JSON.stringify(value)}`).join('\n');
       parts.push(`${fence}{${item.kind}}\n${options ? options + '\n' : ''}${item.source}\n${fence}`);
     }
-    lastKind = item.kind;
   }
   return parts.join('\n\n') + (parts.length ? '\n' : '');
 }

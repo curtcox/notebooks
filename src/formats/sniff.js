@@ -1,0 +1,9 @@
+import {Notebook,normalize} from '../model/notebook.js';import {serialize} from '../model/notebook-markdown.js';import {importIpynb,exportIpynb} from './ipynb.js';import {importPercent,exportPercent} from './percent.js';import {importQuarto,exportQuarto} from './quarto-myst.js';import {importMarimo,exportMarimo} from './marimo.js';import {report} from './report.js';
+export function sniff(source){let data;try{data=JSON.parse(source);}catch{}if(data?.nbformat!==undefined)return 'ipynb';if(data?.format==='hashbin-diagram')return 'document';if(/^\s*import marimo\b/m.test(source)&&/^@app\.(cell|function|class_definition)/m.test(source))return 'marimo';if(/^# %%(?:\s|$)/m.test(source))return 'percent';if(/^`{3,}\{code-cell\}/m.test(source))return 'myst';return 'quarto';}
+export async function importNotebook(source,{kernel}={}){
+ const format=sniff(source);let result;
+ if(format==='document'){const value=JSON.parse(source);if(value.version!==1||value.type!=='notebook')throw Error('Unsupported document type/version.');const doc=normalize(value);doc.notebook.autorun=false;return {doc,report:{...report('Notebook envelope'),kept:['Source and settings.'],converted:['Auto-run off for imported code.']}};}
+ if(format==='ipynb')result=importIpynb(source);else if(format==='percent')result=importPercent(source);else if(format==='marimo')result=await importMarimo(source,kernel);else result=importQuarto(source,{myst:format==='myst'});
+ const doc=normalize({src:serialize(result),notebook:{...result.settings,autorun:false}});return {...result,doc};
+}
+export async function exportNotebook(model,format,options={}){if(format==='ipynb')return exportIpynb(model,options);if(format==='percent')return exportPercent(model);if(format==='marimo')return exportMarimo(model,options.kernel);return exportQuarto(model,{myst:format==='myst'});}

@@ -1,0 +1,3 @@
+export function report(format){return {format,kept:[],converted:[],dropped:[]};}
+export function describeReport(value){return [`${value.format} — format report`,...['kept','converted','dropped'].flatMap(key=>value[key].length?[`${key[0].toUpperCase()+key.slice(1)}: ${value[key].join(' · ')}`]:[])].join('\n');}
+export function showReport(container,value){container.hidden=false;container.replaceChildren(document.createTextNode(describeReport(value)));const close=document.createElement('button');close.textContent='Dismiss';close.onclick=()=>{container.hidden=true;};container.append(document.createTextNode(' '),close);}
