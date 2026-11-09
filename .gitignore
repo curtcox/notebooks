@@ -1,0 +1,8 @@
+node_modules/
+.pyodide-cache/
+.venv/
+__pycache__/
+*.pyc
+test-results/
+playwright-report/
+.DS_Store

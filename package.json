@@ -1,0 +1,16 @@
+{
+  "name": "notebook-online", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:python": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test:browser": "node tests/browser/all.mjs",
+    "test:contracts": "playwright test --config vendor/fragment-kit-v0.4.3/testing/playwright.config.js",
+    "test:formats": "node scripts/format-fixtures.mjs && python3 tests/cross_tools.py",
+    "check": "node scripts/check.mjs",
+    "docs": "node scripts/render-docs.mjs",
+    "offline": "node scripts/update-offline.mjs",
+    "gallery": "node scripts/render-gallery.mjs",
+    "serve": "node tests/browser/server.cjs"
+  },
+  "devDependencies": {"@playwright/test":"1.64.1", "pyodide":"314.0.7", "webr":"0.6.0", "ace-builds":"1.43.3", "markdown-it":"14.1.0", "katex":"0.19.1"}
+}

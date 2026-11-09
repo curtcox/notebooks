@@ -616,4 +616,6 @@ independent of 5–9 once phase 3 lands.
 
 ## Implementation status
 
-Nothing implemented yet (2026-11-09). This section records decisions and evidence as phases land.
+2026-11-09: Implementation is underway directly on `main`, as requested by the owner (overriding the phase PR workflow). Original code is MIT. The owner explicitly chose to keep R execution disabled pending a later CSP decision; phase 10 execution is deferred, while R source cells and formats remain supported.
+
+Foundation: Fragment Kit v0.4.3 vendored unchanged, Ace and Markdown/KaTeX vendored with licenses; Notebook Markdown model, structural editor, source view, sharing, QR, draft recovery, mobile tabs and hash-verified offline shell implemented. Parser/property and URL-state tests pass. Runtime, formats, integrations and acceptance checks are still in progress.

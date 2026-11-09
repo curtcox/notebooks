@@ -1,0 +1,16 @@
+{
+  "slug": "notebook", "name": "Notebook Online", "storagePrefix": "notebookonline",
+  "canonicalOrigin": "https://notebook.hashbin.page/", "recoveryOrigin": "https://curtcox.github.io/notebooks/",
+  "repo": "curtcox/notebooks", "docs": "docs/", "gallery": "gallery.html", "documentType": "notebook",
+  "sandboxBootstrapHash": "sha256-IMEqdP+AkCKdxhM3X7mQM4pV/chykJXPvdtndD+XeH8=",
+  "ai": {
+    "deployments": {
+      "https://notebook.hashbin.page/": {"connection":"host", "host":"https://ai.hashbin.page/v0.4.0/"},
+      "https://curtcox.github.io/notebooks/": {"connection":"direct"},
+      "http://127.0.0.1:8000/": {"connection":"direct"}, "http://localhost/": {"connection":"direct"}
+    },
+    "routes": ["paste","openai","openrouter","anthropic","gemini","local","browser"],
+    "budget":{"total":0,"day":0,"month":0},
+    "models":[{"ref":"openai:gpt-4.1-mini-2025-04-14","capabilities":["generate","decide"],"destination":"OpenAI","pinned":true,"prices":{"input":0.4,"output":1.6}}]
+  }
+}
