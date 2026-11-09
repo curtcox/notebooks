@@ -30,7 +30,7 @@ export class Scheduler {
    const list=reactive?this.graph.order.map(id=>this.graph.nodes.get(id).cell):this.model.cells;
    if(!ids||!this.previousDefs.size)await this.kernel.resetInput(this.model.settings.stdin);
    // Deletions remove their old definitions even when no surviving cell references them.
-   for(const [oldId,names]of this.previousDefs)if(!this.model.cells.some(c=>c.id===oldId)){await this.kernel.deleteNames(names);this.previousDefs.delete(oldId);}
+   for(const [oldId,names]of this.previousDefs)if(!this.model.cells.some(c=>c.id===oldId&&['python','sql'].includes(c.kind)&&!c.options.disabled)){await this.kernel.deleteNames(names);this.previousDefs.delete(oldId);}
    if(reactive)await this.kernel.deleteNames([...new Set([...wanted].flatMap(id=>this.previousDefs.get(id)??[]))]);
    const failed=new Set(this.graph.errors.keys());
    this.automatic=automatic;this.elapsed=0;

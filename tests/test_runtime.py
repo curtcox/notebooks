@@ -15,6 +15,12 @@ class AnalysisTests(unittest.TestCase):
         self.assertTrue({'offset','external','x'} <= set(a['refs']))
         self.assertNotIn('i', a['refs'])
         self.assertNotIn('arg', a['refs'])
+    def test_comprehension_scope_and_outer_iterator(self):
+        self.assertEqual(analyze.analyze('[i for i in range(3)]')['refs'],[])
+        self.assertEqual(analyze.analyze('[i for i in range(i)]')['refs'],['i'])
+        self.assertIn('i',analyze.analyze('[j for j in range(3)]\nprint(i)')['refs'])
+        self.assertIn('external',analyze.analyze('def f():\n    return [x+external for x in items]')['refs'])
+
     def test_walrus_global_delete(self):
         a = analyze.analyze('global x\nx = (y := other)\ndel z')
         self.assertTrue({'x','y'} <= set(a['defs']))

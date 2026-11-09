@@ -30,22 +30,54 @@ def analyze(source):
             visit_AsyncFunctionDef = visit_FunctionDef
             visit_ClassDef = visit_FunctionDef
             def visit_Lambda(self, node): pass
+            def visit_ExceptHandler(self, node):
+                if node.name: self.names.add(node.name)
+                self.generic_visit(node)
+            def visit_MatchAs(self, node):
+                if node.name: self.names.add(node.name)
+                self.generic_visit(node)
+            visit_MatchStar = visit_MatchAs
             def visit_comprehension(self, node):
                 self.visit(node.iter)
                 for expr in node.ifs: self.visit(expr)
         bindings = Bindings()
         bindings.visit(tree)
         defs = bindings.names | {name for n in ast.walk(tree) if isinstance(n, ast.Global) for name in n.names}
-        refs = {s.get_name() for s in table.get_symbols() if s.is_referenced()}
+        class Loads(ast.NodeVisitor):
+            def __init__(self): self.names, self.locals = set(), []
+            def visit_Name(self, node):
+                if isinstance(node.ctx, ast.Load) and not any(node.id in scope for scope in self.locals): self.names.add(node.id)
+            def visit_FunctionDef(self, node):
+                for expr in [*node.decorator_list, *node.args.defaults, *[v for v in node.args.kw_defaults if v], node.returns]:
+                    if expr is not None: self.visit(expr)
+                for arg in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]:
+                    if arg.annotation: self.visit(arg.annotation)
+            visit_AsyncFunctionDef = visit_FunctionDef
+            def visit_Lambda(self, node):
+                for expr in node.args.defaults: self.visit(expr)
+            def visit_ClassDef(self, node):
+                for expr in [*node.decorator_list, *node.bases, *[k.value for k in node.keywords]]: self.visit(expr)
+            def comprehension(self, node):
+                self.locals.append(set())
+                for generator in node.generators:
+                    self.visit(generator.iter)
+                    self.locals[-1].update(n.id for n in ast.walk(generator.target) if isinstance(n, ast.Name))
+                    for condition in generator.ifs: self.visit(condition)
+                for expr in ([node.key, node.value] if isinstance(node, ast.DictComp) else [node.elt]): self.visit(expr)
+                self.locals.pop()
+            visit_ListComp = comprehension
+            visit_SetComp = comprehension
+            visit_DictComp = comprehension
+            visit_GeneratorExp = comprehension
+        loads = Loads()
+        loads.visit(tree)
+        refs = loads.names
         def children(scope):
             for child in scope.get_children():
-                # Referenced module globals in functions/classes/comprehensions affect dependencies.
                 for symbol in child.get_symbols():
-                    if symbol.is_global() and symbol.is_referenced():
-                        refs.add(symbol.get_name())
+                    if symbol.is_global() and symbol.is_referenced(): refs.add(symbol.get_name())
                 children(child)
         children(table)
-        refs -= {s.get_name() for s in table.get_symbols() if getattr(s, 'is_comp_iter', lambda: False)() and s.get_name() not in defs}
         deleted = {n.id for node in ast.walk(tree) if isinstance(node, ast.Delete) for n in ast.walk(node) if isinstance(n, ast.Name)}
         dynamic = any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) or isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('exec', 'globals') for n in ast.walk(tree))
         public = lambda names: sorted(n for n in names if not n.startswith('_'))
