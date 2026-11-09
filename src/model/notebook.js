@@ -12,7 +12,7 @@ export function normalize(value) {
 }
 export class Notebook {
   constructor(doc = {src: ''}) { this.revision = 0; this.undoStack = []; this.load(doc); }
-  load(doc) { const normalized = normalize(doc); Object.assign(this, parse(normalized.src), {settings: normalized.notebook, metadata: {}}); this.revision++; }
+  load(doc) { this.undoStack = []; const normalized = normalize(doc); Object.assign(this, parse(normalized.src), {settings: normalized.notebook, metadata: {}}); this.revision++; }
   snapshot() { return normalize({src: serialize(this), notebook: {...this.settings}}); }
   editSource(source) { Object.assign(this, parse(source, this.cells)); this.revision++; }
   saveUndo() { this.undoStack.push({cells: structuredClone(this.cells), frontMatter: this.frontMatter}); if (this.undoStack.length > 100) this.undoStack.shift(); }

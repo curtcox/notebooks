@@ -42,8 +42,8 @@ export class CellList {
     const editor=ace.edit(view.editor);editor.setTheme('ace/theme/chrome');editor.session.setMode(`ace/mode/${cell.kind==='raw'?'markdown':cell.kind}`);editor.setOptions({minLines:3,maxLines:35,fontSize:14,showPrintMargin:false,useWorker:false,enableBasicAutocompletion:true,enableLiveAutocompletion:false});editor.setValue(cell.source,-1);
     editor.session.on('change',()=>{cell.source=editor.getValue();cell.status='stale';this.model.revision++;this.onEdit(cell.id);});
     editor.commands.addCommand({name:'runCell',bindKey:{win:'Ctrl-Enter',mac:'Command-Enter'},exec:()=>this.onRun(id)});
-    editor.commands.addCommand({name:'runAdvance',bindKey:'Shift-Enter',exec:()=>{this.onRun(id);this.advance(id);}});
-    editor.commands.addCommand({name:'runInsert',bindKey:'Alt-Enter',exec:()=>{this.onRun(id);const next=this.model.insert(this.model.cells.indexOf(cell)+1);this.onStructure(next.id);this.edit(next.id);}});
+    editor.commands.addCommand({name:'runAdvance',bindKey:'Shift-Enter',exec:async()=>{await this.onRun(id);this.advance(id);}});
+    editor.commands.addCommand({name:'runInsert',bindKey:'Alt-Enter',exec:async()=>{await this.onRun(id);const next=this.model.insert(this.model.cells.indexOf(cell)+1);this.onStructure(next.id);this.edit(next.id);}});
     editor.commands.addCommand({name:'commandMode',bindKey:'Esc',exec:()=>{editor.blur();this.finishEdit(id);view.node.focus();}});
     this.editors.set(id,editor);
   }
@@ -61,11 +61,11 @@ export class CellList {
     if(markdown){if(/<\/?[a-z][^>]*>/i.test(cell.source)){const html=globalThis.markdownit({html:true}).render(cell.source);view.preview.replaceChildren(htmlFrame(html));}else renderMarkdown(view.preview,cell.source);}
     view.output.replaceChildren();for(const output of cell.outputs??[])renderOutput(view.output,output,{widget:(container,spec)=>this.onWidget?.(container,spec,output.kernelGeneration)});
   }
-  key(e) {
+  async key(e) {
     if(e.target.closest('.ace_editor,input,textarea,select,button'))return;
     const cell=this.model.cells.find(c=>c.id===this.selected);if(!cell)return;
     const i=this.model.cells.indexOf(cell),key=e.key.toLowerCase();
-    if(key==='enter'){e.preventDefault();if(e.shiftKey){this.onRun(cell.id);this.advance(cell.id);}else if(e.ctrlKey||e.metaKey)this.onRun(cell.id);else this.edit(cell.id);}
+    if(key==='enter'){e.preventDefault();if(e.altKey){await this.onRun(cell.id);const next=this.model.insert(i+1);this.onStructure(next.id);this.edit(next.id);}else if(e.shiftKey){await this.onRun(cell.id);this.advance(cell.id);}else if(e.ctrlKey||e.metaKey)this.onRun(cell.id);else this.edit(cell.id);}
     else if(key==='a'||key==='b'){e.preventDefault();const next=this.model.insert(i+(key==='b'?1:0));this.onStructure(next.id);}
     else if(key==='d'){if(Date.now()-this.lastD<500){this.model.remove(cell.id);this.onStructure();}this.lastD=Date.now();}
     else if(key==='z'){this.model.undo();this.onStructure();}

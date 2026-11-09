@@ -11,7 +11,7 @@
 <main id="workspace">
 <section id="notebook-pane" aria-label="Notebook"><div class="notebook-heading"><div><span class="eyebrow">A NOTEBOOK, ANYWHERE</span><h1 id="title">Untitled notebook</h1></div><span id="mode-badge">Reactive</span></div><div id="cells"></div><button id="append-cell" class="add-cell">+ Add cell</button><section id="source-pane" hidden><label for="source-editor">Notebook Markdown source</label><div id="source-editor"></div></section></section>
 <aside id="outline-pane"><h2>Outline</h2><nav id="outline" aria-label="Notebook outline"></nav><p class="aside-note">Source travels in the link.<br>Outputs are recomputed.</p></aside>
-<section id="input-pane"><h2>Program input</h2><p>One line per <code>input()</code> call. Resets on Run all.</p><textarea id="stdin" aria-label="Program input" rows="8" spellcheck="false"></textarea></section>
+<section id="input-pane"><details id="input-details"><summary>Program input</summary><p>One line per <code>input()</code> call. Resets on Run all.</p><textarea id="stdin" aria-label="Program input" rows="8" spellcheck="false"></textarea></details></section>
 </main>
 <div id="report" role="status" hidden></div><footer id="footer"><span id="status" role="status">Ready</span><span>Python 3.14 · Pyodide 314.0.7</span></footer>
 <input id="file-open" type="file" accept=".ipynb,.py,.qmd,.md,.json" hidden>
