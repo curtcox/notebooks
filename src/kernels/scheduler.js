@@ -39,8 +39,9 @@ export class Scheduler {
     if(cell.kind==='r'){cell.status='disabled';cell.error='R requires approval in this build.';failed.add(cell.id);this.onChange(cell.id);continue;}
     if(reactive&&(this.graph.errors.has(cell.id)||[...this.graph.nodes.get(cell.id).parents].some(p=>failed.has(p)))){cell.status='stale';cell.error=this.graph.errors.get(cell.id)??'Stale (ancestor error or stopped)';failed.add(cell.id);this.onChange(cell.id);continue;}
     cell.outputs=[];cell.error=null;cell.status='queued';this.current=cell;this.onChange(cell.id);
-    const defs=this.previousDefs.get(cell.id)??[];
-    const result=await this.kernel.run(cell,{reactive,delete:defs});
+    // Reactive names were removed together before the batch. Deleting again here
+    // can erase a value that an earlier cell has just taken ownership of.
+    const result=await this.kernel.run(cell,{reactive});
     this.clearLimit();if(version!==this.version)return;
     cell.executionCount=result.executionCount;cell.status=result.ok?(result.stopped?'stopped':'ok'):'error';cell.error=result.error;this.previousDefs.set(cell.id,cell.analysis?.defs??[]);if(!result.ok||result.stopped)failed.add(cell.id);this.onChange(cell.id);
     if(!reactive&&cell.analysis){for(const other of this.model.cells)if(other!==cell&&other.analysis?.refs.some(ref=>cell.analysis.defs.includes(ref))&&other.status==='ok'){other.status='possibly stale';this.onChange(other.id);}}

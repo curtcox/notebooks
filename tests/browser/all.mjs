@@ -26,6 +26,18 @@ try{
   // Editing an ancestor reruns its descendants.
   await page.evaluate(()=>{NotebookOnline.model.settings.autorun=true;const c=NotebookOnline.model.cells[0];c.source='x=3';NotebookOnline.model.revision++;NotebookOnline.cells.onEdit(c.id);});
   await expect(page.locator('.cell-output').last()).toHaveText('6',{timeout:60000});
+  // Moving a public definition preserves its new value throughout the rerun.
+  await page.evaluate(()=>{NotebookOnline.model.settings.autorun=false;});
+  await source(code('y=2')+'\n'+code('x=21')+'\n'+code('x*y'));await run();
+  await expect(page.locator('.cell-output').last()).toHaveText('42');
+  await source(code('x=21')+'\n'+code('y=2')+'\n'+code('x*y'));await run();
+  await expect(page.locator('.cell-output').last()).toHaveText('42');
+  // Public names shadowing builtins still determine reactive execution order.
+  await source(code('sum([1,2])')+'\n'+code('sum=lambda values:42'));await run();
+  await expect(page.locator('.cell-output').first()).toHaveText('42');
+  // Python %%sql cells have the same graph bindings as native SQL cells.
+  await source(code('int(totals.iloc[0]["total"])')+'\n'+code('%%sql totals\nselect sum(x) as total from df')+'\n'+code('import pandas as pd\ndf=pd.DataFrame({"x":[1,2,3]})'));await run();
+  await expect(page.locator('.cell-output').first()).toHaveText('6');
   // Native widget updates only rerun referencing cells.
   await page.evaluate(()=>{NotebookOnline.model.settings.autorun=false;});
   await source(code('import marimo as mo\nslider=mo.ui.slider(0,10,value=2,label="Count")\nslider')+'\n'+code('slider.value*2'));await run();

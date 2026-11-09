@@ -10,7 +10,7 @@ from ipython_compat import transform
 BUILTINS = set(dir(builtins)) | {'display', 'get_ipython', '__name__', '__file__'}
 
 
-def analyze(source):
+def analyze(source, notebook_defs=()):
     try:
         transformed = transform(source)
         analysis_source = re.sub(r'^(\s*)%(?:time|timeit)\s+(.+)$', r'\1\2', source, flags=re.M)
@@ -81,20 +81,31 @@ def analyze(source):
         deleted = {n.id for node in ast.walk(tree) if isinstance(node, ast.Delete) for n in ast.walk(node) if isinstance(n, ast.Name)}
         dynamic = any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) or isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('exec', 'globals') for n in ast.walk(tree))
         public = lambda names: sorted(n for n in names if not n.startswith('_'))
-        return {'defs': [] if dynamic else public(defs), 'refs': public(refs - BUILTINS), 'deletes': public(deleted), 'dynamic': dynamic}
+        return {'defs': [] if dynamic else public(defs), 'refs': public(refs - (BUILTINS - set(notebook_defs))), 'deletes': public(deleted), 'dynamic': dynamic}
     except (SyntaxError, ValueError) as error:
         return {'defs': [], 'refs': [], 'deletes': [], 'error': str(error)}
 
 
 def analyze_cells(cells):
     analyses = [analyze(c['source']) if c['kind'] == 'python' else {'defs': [], 'refs': [], 'deletes': []} for c in cells]
-    names = {name for a in analyses for name in a['defs']}
-    names.update(c.get('options', {}).get('output') for c in cells if c['kind'] == 'sql' and c.get('options', {}).get('output'))
-    names.discard(None)
+    sql_cells = {}
     for i, c in enumerate(cells):
         if c['kind'] == 'sql':
-            output = c.get('options', {}).get('output', '_df')
-            analyses[i] = {'defs': [output] if not output.startswith('_') else [], 'refs': sorted(set(re.findall(r'\b[A-Za-z_]\w*\b', c['source'])) & names), 'deletes': []}
+            sql_cells[i] = (c['source'], c.get('options', {}).get('output', '_df'))
+        elif c['kind'] == 'python' and re.match(r'^%%sql(?:\s|$)', c['source']):
+            header, _, query = c['source'].partition('\n')
+            sql_cells[i] = (query, header[len('%%sql'):].strip() or '_df')
+    for i, (_, output) in sql_cells.items():
+        if not isinstance(output, str) or not output.isidentifier():
+            analyses[i] = {'defs': [], 'refs': [], 'deletes': [], 'error': 'SQL output must be a Python variable name.'}
+        else:
+            analyses[i] = {'defs': [output] if not output.startswith('_') else [], 'refs': [], 'deletes': []}
+    names = {name for c, a in zip(cells, analyses) if not c.get('options', {}).get('disabled') for name in a['defs']}
+    for i, c in enumerate(cells):
+        if i in sql_cells:
+            analyses[i]['refs'] = sorted(set(re.findall(r'\b[A-Za-z_]\w*\b', sql_cells[i][0])) & names)
+        elif c['kind'] == 'python' and names & BUILTINS:
+            analyses[i] = analyze(c['source'], names)
     return analyses
 
 

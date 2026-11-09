@@ -7,3 +7,19 @@ test('manual reactive selection resolves stale ancestors',async()=>{const cells=
 test('reactive batch removes obsolete definitions before any dependent can read them',async()=>{const events=[],cells=[c('consumer'),c('producer')];let first=true;const kernel={analyze:async()=>first?[a(['z'],['x']),a(['x'])]:[a(['z'],['x']),a(['y'])],resetInput:async()=>{},deleteNames:async names=>events.push(['delete',...names]),run:async cell=>{events.push(['run',cell.id]);return {ok:true};}};const scheduler=new Scheduler({model:{cells,settings:{mode:'reactive',stdin:''},revision:0},kernel});await scheduler.run();first=false;events.length=0;await scheduler.run();assert.ok(events.findIndex(e=>e[0]==='delete'&&e.includes('x'))<events.findIndex(e=>e[0]==='run'));});
 test('disabling a defining cell removes its old names before a selected consumer runs',async()=>{const cells=[c('a'),c('b')],deleted=[],kernel={analyze:async()=>[a(['x']),a(['y'],['x'])],resetInput:async()=>{},deleteNames:async names=>deleted.push(...names),run:async()=>({ok:true})};const scheduler=new Scheduler({model:{cells,settings:{mode:'reactive',stdin:''},revision:0},kernel});await scheduler.run();cells[0].options.disabled=true;deleted.length=0;await scheduler.run({ids:['b']});assert.ok(deleted.includes('x'));});
 test('linear analysis leaves duplicate definitions advisory instead of marking cells as errors',async()=>{const cells=[c('a'),c('b')],scheduler=new Scheduler({model:{cells,settings:{mode:'linear'},revision:0},kernel:{analyze:async()=>[a(['x']),a(['x'])]}});await scheduler.analyze();assert.equal(scheduler.graph.errors.size,2);assert.ok(cells.every(cell=>!cell.error&&cell.status!=='error'));});
+test('moving a definition between cells never deletes its newly computed value',async()=>{
+ const cells=[c('new-owner'),c('old-owner'),c('consumer')],namespace=new Map();let moved=false;
+ const kernel={
+  analyze:async()=>moved?[a(['x']),a(['y']),a([],['x','y'])]:[a(['y']),a(['x']),a([],['x','y'])],
+  resetInput:async()=>{},deleteNames:async names=>{for(const name of names)namespace.delete(name);},
+  run:async(cell,{delete:names=[]})=>{
+   for(const name of names)namespace.delete(name);
+   if(cell.id==='consumer')assert.deepEqual(Object.fromEntries(namespace),{x:21,y:2});
+   else namespace.set((cell.id==='new-owner')===moved?'x':'y',(cell.id==='new-owner')===moved?21:2);
+   return {ok:true};
+  }
+ };
+ const scheduler=new Scheduler({model:{cells,settings:{mode:'reactive'},revision:0},kernel});
+ await scheduler.run();moved=true;await scheduler.run();
+ assert.equal(cells[2].status,'ok');
+});

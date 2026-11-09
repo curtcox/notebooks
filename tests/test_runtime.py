@@ -25,6 +25,33 @@ class AnalysisTests(unittest.TestCase):
         a = analyze.analyze('global x\nx = (y := other)\ndel z')
         self.assertTrue({'x','y'} <= set(a['defs']))
         self.assertEqual(a['deletes'], ['z'])
+    def test_notebook_definitions_shadow_builtins(self):
+        cells = [{'kind': 'python', 'source': 'sum([1, 2])'},
+                 {'kind': 'python', 'source': 'sum = lambda values: 42'}]
+        consumer, producer = analyze.analyze_cells(cells)
+        self.assertEqual(consumer['refs'], ['sum'])
+        self.assertEqual(producer['defs'], ['sum'])
+        cells[1]['options'] = {'disabled': True}
+        self.assertEqual(analyze.analyze_cells(cells)[0]['refs'], [])
+
+    def test_sql_magic_has_dataframe_dependencies_and_output(self):
+        cells = [{'kind': 'python', 'source': 'answer = int(totals.iloc[0]["total"])'},
+                 {'kind': 'python', 'source': '%%sql totals\nselect sum(x) as total from df'},
+                 {'kind': 'python', 'source': 'df = make_dataframe()'}]
+        analyses = analyze.analyze_cells(cells)
+        self.assertEqual(analyses[1]['defs'], ['totals'])
+        self.assertEqual(analyses[1]['refs'], ['df'])
+        self.assertIn('totals', analyses[0]['refs'])
+        cells[1]['source'] = '%%sql\nselect * from df'
+        self.assertEqual(analyze.analyze_cells(cells)[1]['defs'], [])
+        cells[1]['source'] = '%%sql invalid output\nselect * from df'
+        self.assertIn('error', analyze.analyze_cells(cells)[1])
+
+    def test_native_sql_output_can_shadow_builtin(self):
+        cells = [{'kind': 'python', 'source': 'sum.iloc[0]'},
+                 {'kind': 'sql', 'source': 'select 42', 'options': {'output': 'sum'}}]
+        self.assertEqual(analyze.analyze_cells(cells)[0]['refs'], ['sum'])
+
     def test_invalid_and_dynamic(self):
         self.assertIn('error', analyze.analyze('x = '))
         self.assertTrue(analyze.analyze('exec("x=1")')['dynamic'])
