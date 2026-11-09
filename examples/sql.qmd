@@ -1,0 +1,19 @@
+# SQL meets Python
+
+The SQL result is bound to a Python name with the output option.
+
+```{python}
+import pandas as pd
+orders = pd.DataFrame({"city": ["Austin", "Austin", "Chicago"], "amount": [18, 12, 40]})
+```
+
+```{sql}
+#| output: totals
+select city, sum(amount) as total from orders group by city order by city
+```
+
+```{python}
+import matplotlib.pyplot as plt
+plt.bar(totals["city"], totals["total"], color="#225b50")
+plt.show()
+```

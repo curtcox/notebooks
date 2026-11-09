@@ -1,0 +1,283 @@
+{
+  "format": "fragment-kit-eval-suite",
+  "version": 1,
+  "app": "notebook",
+  "cases": [
+    {
+      "id": "add-cell",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\nx=1\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Add a cell that prints Hello",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": "Hello"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "```{python}\nx=1\n```\n\n```{python}\nprint(\"Hello\")\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\nx=1\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "fix-error",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\n1/0\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Fix the division by zero",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": "1/1"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "```{python}\n1/1\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\n1/0\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "dataframe",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\ntotal=0\nfor v in df[\"x\"]:\n    total+=v\ntotal\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Use a dataframe sum rather than the loop",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": ".sum()"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\ntotal=df[\"x\"].sum()\ntotal\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\ntotal=0\nfor v in df[\"x\"]:\n    total+=v\ntotal\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Add a SQL query over df and bind totals",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": "select sum(x)"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\n```\n\n```{sql}\n#| output: totals\nselect sum(x) as total from df\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\nimport pandas as pd\ndf=pd.DataFrame({\"x\":[1,2,3]})\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "slider",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\nimport marimo as mo\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Add a slider that drives a plot",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": "slider.value"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "```{python}\nimport marimo as mo\nslider=mo.ui.slider(1,10,value=3)\nslider\n```\n\n```{python}\nimport matplotlib.pyplot as plt\nplt.plot(range(slider.value))\nplt.show()\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\nimport marimo as mo\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "keep-settings",
+      "kind": "change",
+      "base": {
+        "src": "```{python}\nx=1\n```\n",
+        "notebook": {
+          "mode": "reactive",
+          "autorun": false,
+          "stdin": ""
+        }
+      },
+      "request": "Add a Markdown heading; keep all settings",
+      "checks": [
+        {
+          "type": "valid"
+        },
+        {
+          "type": "unchangedFields",
+          "fields": [
+            "/notebook"
+          ]
+        },
+        {
+          "type": "contains",
+          "text": "# Result"
+        }
+      ],
+      "reference": {
+        "good": {
+          "src": "# Result\n\n```{python}\nx=1\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        },
+        "bad": {
+          "src": "```{python}\nx=1\n```\n",
+          "notebook": {
+            "mode": "reactive",
+            "autorun": false,
+            "stdin": ""
+          }
+        }
+      }
+    }
+  ]
+}

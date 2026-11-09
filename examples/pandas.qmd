@@ -1,0 +1,13 @@
+# A small data exploration
+
+A dataframe is available to Python and SQL in the same kernel.
+
+```{python}
+import pandas as pd
+sales = pd.DataFrame({"fruit": ["apples", "pears", "plums"], "sold": [12, 8, 15]})
+sales
+```
+
+```{python}
+sales.describe()
+```

@@ -7,6 +7,7 @@ export class CellList {
     Object.assign(this,{container,model,onEdit,onStructure,onRun,onAsk,onWidget});this.editors=new Map();this.nodes=new Map();this.lastD=0;
     this.observer=new IntersectionObserver(entries=>{for(const entry of entries){const id=entry.target.dataset.cellId;if(entry.isIntersecting)this.mountEditor(id);else if(this.model.cells.length>50&&this.selected!==id)this.releaseEditor(id);}},{rootMargin:'700px'});
     this.container.addEventListener('keydown',e=>this.key(e));
+    this.container.addEventListener('cell-line',e=>{this.edit(e.detail.id);this.editors.get(e.detail.id)?.gotoLine(e.detail.line,0,true);});
   }
   render() {
     for(const editor of this.editors.values())editor.destroy();this.editors.clear();this.observer.disconnect();this.nodes.clear();this.container.replaceChildren();
@@ -25,7 +26,7 @@ export class CellList {
       action(cell.options['hide-code']?'Show code':'Hide code',()=>{cell.options['hide-code']=!cell.options['hide-code'];this.onStructure(cell.id);});
       action('Run all above',()=>this.onRun(null,{ids:this.model.cells.slice(0,index).map(c=>c.id)}));action('Run all below',()=>this.onRun(null,{ids:this.model.cells.slice(index+1).map(c=>c.id)}));
       action('Clear output',()=>{cell.outputs=[];this.update(cell.id);});action('Insert above',()=>{const next=this.model.insert(index);this.onStructure(next.id);});
-      action('Ask AI about cell',()=>this.onAsk?.(cell));action('Copy cell link',()=>{const url=new URL(location.href);url.searchParams.set('cell',cell.id);navigator.clipboard.writeText(url.href).catch(()=>{});});
+      action('Ask AI about cell',()=>this.onAsk?.(cell));action('Copy cell link',()=>{cell.options.id=cell.id;this.onEdit(cell.id,{run:false});const url=new URL(location.href);url.searchParams.set('cell',cell.id);navigator.clipboard.writeText(url.href).catch(()=>{});});
       const deps=el('div',null,'cell-deps'),editor=el('div',null,'cell-editor'),preview=el('div',null,'cell-preview'),output=el('div',null,'cell-output');
       editor.setAttribute('aria-label',`Cell ${index+1} source`);
       preview.ondblclick=()=>this.edit(cell.id);preview.title='Double-click to edit';
@@ -53,7 +54,7 @@ export class CellList {
   advance(id) {const i=this.model.cells.findIndex(c=>c.id===id);if(i===this.model.cells.length-1){const next=this.model.insert(i+1);this.onStructure(next.id);this.edit(next.id);}else{this.select(this.model.cells[i+1].id);this.nodes.get(this.selected)?.node.focus();}}
   update(id) {
     const cell=this.model.cells.find(c=>c.id===id),view=this.nodes.get(id);if(!cell||!view)return;
-    view.state.textContent=cell.options.disabled?'disabled':cell.error??cell.status;view.state.classList.toggle('error',Boolean(cell.error)||cell.status==='error');
+    view.state.textContent=cell.options.disabled?'disabled':cell.error?.split('\n').filter(Boolean).at(-1)??cell.status;view.state.classList.toggle('error',Boolean(cell.error)||cell.status==='error');
     view.number.textContent=this.model.settings.mode==='linear'&&cell.executionCount!=null?`[${cell.executionCount}]`:String(this.model.cells.indexOf(cell)+1);
     view.deps.textContent=this.model.settings.mode==='reactive'&&cell.analysis?`uses ${cell.analysis.refs.join(', ')||'—'} · defines ${cell.analysis.defs.join(', ')||'—'}`:'';
     const markdown=cell.kind==='markdown';view.editor.hidden=markdown||cell.options['hide-code']===true||cell.options.echo===false;view.preview.hidden=!markdown;

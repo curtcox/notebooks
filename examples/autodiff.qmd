@@ -1,0 +1,38 @@
+# A tiny differentiation engine
+
+An original, minimal reverse-mode autodiff example inspired by micrograd. Each operation remembers its local derivative.
+
+```{python}
+import math
+class Value:
+    def __init__(self, data, parents=()):
+        self.data, self.grad, self.parents = data, 0.0, parents
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        return Value(self.data + other.data, ((self, 1.0), (other, 1.0)))
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        return Value(self.data * other.data, ((self, other.data), (other, self.data)))
+    def backward(self):
+        order, seen = [], set()
+        def visit(node):
+            if node in seen:
+                return
+            seen.add(node)
+            for parent, _ in node.parents:
+                visit(parent)
+            order.append(node)
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            for parent, derivative in node.parents:
+                parent.grad += derivative * node.grad
+```
+
+```{python}
+x = Value(3)
+y = x * x + x
+# y = x² + x; dy/dx = 2x + 1
+y.backward()
+print(f"y = {y.data}; dy/dx = {x.grad}")
+```

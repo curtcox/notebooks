@@ -1,0 +1,8 @@
+# From a marimo notebook
+
+Open examples/marimo-demo.py to try AST-based import. The compatibility module implements a documented subset of marimo.
+
+```{python}
+import marimo as mo
+mo.md("## Hello from the compatibility subset")
+```

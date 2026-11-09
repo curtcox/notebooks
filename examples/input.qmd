@@ -1,0 +1,9 @@
+# Input, one line at a time
+
+Open the Input tab, or the Program input panel below the notebook. Input is carried in share links and .ipynb metadata.
+
+```{python}
+name = input("Name: ")
+number = int(input("Number: "))
+print(f"Hello, {name}. Twice your number is {number * 2}.")
+```

@@ -1,6 +1,7 @@
 """Original, deliberately bounded compatibility subset of marimo's public Python API."""
 import html
 import json
+import re
 import types
 from datetime import date as _date
 
@@ -27,14 +28,15 @@ def _id():
 
 
 class Rich:
-    def __init__(self, text='', kind='markdown', children=None, label=''):
+    def __init__(self, text='', kind='markdown', children=None, label='', labels=None):
         self.text, self.kind, self.children, self.label = str(text), kind, children or [], label
+        self.labels = labels or []
     def _repr_mimebundle_(self, **kwargs):
-        if self.kind == 'markdown':
+        if self.kind == 'markdown' and not self.children:
             return {'text/markdown': self.text}
         if self.kind == 'html':
             return {'text/html': self.text}
-        return {MIME: {'kind': self.kind, 'children': [_spec(c) for c in self.children], 'label': str(self.label)}}
+        return {MIME: {'kind': self.kind, 'children': [_spec(c) for c in self.children], 'label': str(self.label), 'labels': self.labels, 'text': self.text}}
     def __str__(self):
         return self.text
 
@@ -59,15 +61,27 @@ class Widget:
         self.on_change, self.on_click = on_change, on_click
         self._owner = _cell
         self._initial = value
-        self.value = _values.get(self.id, value)
+        old = _widgets.get(self.id)
+        signature = (kind, value, start, stop, step, self.options)
+        raw = _values.get(self.id, value) if old is not None and old._signature == signature else value
+        self._signature = signature
+        self._selected = raw
+        self.value = self.options.get(raw) if isinstance(self.options, dict) and kind in ('dropdown', 'radio') else raw
         _widgets[self.id] = self
+    @property
+    def value(self):
+        if self.kind == 'array': return [child.value for child in self.children]
+        if self.kind == 'dictionary': return dict(zip(self.options, [child.value for child in self.children]))
+        return self._value
+    @value.setter
+    def value(self, value): self._value = value
     def spec(self):
-        return {'kind': self.kind, 'id': self.id, 'label': self.label, 'value': self.value, 'min': self.start, 'max': self.stop, 'step': self.step, 'options': list(self.options) if not isinstance(self.options, dict) else list(self.options.keys()), 'children': [_spec(c) for c in self.children]}
+        return {'kind': self.kind, 'id': self.id, 'label': self.label, 'value': self._selected if isinstance(self.options, dict) and self.kind in ('dropdown','radio') else self.value, 'min': self.start, 'max': self.stop, 'step': self.step, 'options': list(self.options) if not isinstance(self.options, dict) else list(self.options.keys()), 'children': [_spec(c) for c in self.children]}
     def _repr_mimebundle_(self, **kwargs):
         return {MIME: self.spec()}
     def __str__(self):
         # A Markdown value cannot smuggle widget HTML into the editor DOM.
-        return f'[{self.label or self.kind}: {self.value}]'
+        return f'[[nb-widget:{self.id}]]'
     def form(self, submit_button_label='Submit', **kwargs):
         return Widget('form', value=self.value, label=submit_button_label, children=[self])
 
@@ -89,10 +103,18 @@ def _set_value(widget_id, value):
         raise ValueError('Unknown widget options.')
     elif widget.kind == 'range_slider' and (not isinstance(value, list) or len(value) != 2 or any(not isinstance(v,(int,float)) or v < widget.start or v > widget.stop for v in value) or value[0] > value[1]):
         raise ValueError('Invalid range.')
-    widget.value = value
+    if widget.kind == 'form':
+        values = [value] if len(widget.children) == 1 else value
+        if not isinstance(values, list) or len(values) != len(widget.children):
+            raise ValueError('Form values do not match its children.')
+        for child, child_value in zip(widget.children, values): _set_value(child.id, child_value)
+        widget.value = widget.children[0].value if len(widget.children)==1 else [c.value for c in widget.children]
+    else:
+        widget.value = widget.options[value] if isinstance(widget.options, dict) and widget.kind in ('dropdown','radio') else value
+    widget._selected = value
     _values[widget_id] = value
     if widget.on_change:
-        widget.on_change(value)
+        widget.on_change(widget.value)
     if widget.on_click:
         result = widget.on_click(value)
         if result is not None:
@@ -113,7 +135,8 @@ class UI:
         return Widget('text_area', value, **kw)
     def checkbox(self, value=False, **kw):
         return Widget('checkbox', value, **kw)
-    switch = checkbox
+    def switch(self, value=False, **kw):
+        return Widget('switch', value, **kw)
     def dropdown(self, options, value=None, **kw):
         return Widget('dropdown', next(iter(options), None) if value is None else value, options=options, **kw)
     def radio(self, options, value=None, **kw):
@@ -142,13 +165,15 @@ ui = UI()
 
 
 def md(text):
-    return Rich(text)
+    text = str(text)
+    widgets = [_widgets[id] for id in re.findall(r'\[\[nb-widget:([^\]]+)\]\]',text) if id in _widgets]
+    return Rich(text, children=widgets)
 
 def plain_text(text):
     return Rich(f'<pre>{html.escape(str(text))}</pre>', 'html')
 
 def as_html(value):
-    return value if hasattr(value, '_repr_mimebundle_') else plain_text(value)
+    return value if hasattr(value, '_repr_mimebundle_') else Rich(value._repr_html_(),'html') if callable(getattr(value,'_repr_html_',None)) else plain_text(value)
 
 def hstack(items, **kwargs):
     return Rich(kind='hstack', children=list(items))
@@ -160,10 +185,10 @@ def callout(value, kind='info'):
     return Rich(kind='callout', children=[value], label=kind)
 
 def accordion(items, **kwargs):
-    return Rich(kind='accordion', children=list(items.values()), label=' · '.join(items))
+    return Rich(kind='accordion', children=list(items.values()), labels=list(items))
 
 def tabs(items, **kwargs):
-    return Rich(kind='tabs', children=list(items.values()), label=' · '.join(items))
+    return Rich(kind='tabs', children=list(items.values()), labels=list(items))
 
 def stop(condition, output=None):
     if condition:

@@ -1,0 +1,15 @@
+# Welcome to Notebook Online
+
+A little code. A notebook you can take anywhere. Change a value, then share the link.
+
+```{python}
+x = 21
+```
+
+```{python}
+x * 2
+```
+
+## Follow the dependencies
+
+**Reactive** mode follows names, even when cells are out of order. **Linear** mode runs cells when you ask.

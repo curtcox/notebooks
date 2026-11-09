@@ -60,6 +60,17 @@ class RuntimeTests(unittest.TestCase):
             def _repr_html_(self): return '<b>Hi</b>'
             def _repr_json_(self): return {'x':1}
         data=runtime.mimebundle(Rich());self.assertEqual(data['text/html'],'<b>Hi</b>');self.assertEqual(data['application/json'],{'x':1})
+    def test_embedded_widgets_forms_and_mapping(self):
+        mo._begin('composite',self.items.append)
+        choice=mo.ui.dropdown({'Two':2,'Four':4},value='Two')
+        self.assertEqual(choice.value,2)
+        form=choice.form()
+        mo._set_value(form.id,'Four')
+        self.assertEqual(choice.value,4);self.assertEqual(form.value,4)
+        rich=mo.md(f'Choose: {choice}')._repr_mimebundle_()[mo.MIME]
+        self.assertEqual(rich['children'][0]['id'],choice.id)
+        array=mo.ui.array([choice]);self.assertEqual(array.value,[4])
+
     def test_widget_state_and_unsupported(self):
         mo._begin('widgets',self.items.append);widget=mo.ui.slider(0,10,value=3);self.assertEqual(widget.value,3)
         mo._set_value(widget.id,7);self.assertEqual(widget.value,7)

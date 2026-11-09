@@ -1,5 +1,6 @@
 import {createAi,createAskPanel,createAiSettings} from '../vendor/fragment-kit-v0.4.3/src/ai/index.js';
 import {kit,config,type,urlState} from './fragment-config.mjs';import {parse} from './model/notebook-markdown.js';import {PythonClient} from './kernels/python-client.js';import {buildGraph} from './kernels/scheduler.js';
+export {handleAiCallback} from '../vendor/fragment-kit-v0.4.3/src/ai/index.js';
 export function configureAiType(){
  type.ai={describe:'Notebook Online: src is Notebook Markdown, with ```{python}, ```{sql}, ```{r}, ```{raw} executable fences and ordinary Markdown between them. Plain ```python is display-only. Cell options start #|. Reactive mode allows only one cell to define each public Python name, with no cycles; underscore-prefixed names are cell-local. R execution is disabled. marimo is a compatibility subset (mo.md, mo.ui native widgets, mo.sql, mo.stop, layouts, mo.state). Preserve all notebook settings. Never insert secrets. Source code has network access when explicitly run.',output:'edits',paths:['/src'],settingsKeys:[],validate:doc=>{parse(doc.src);return true;},checks:{parses:async({document})=>{parse(document.src);return true;},graphValid:async({document,signal})=>graphValid(document,signal),runsAndOutputs:async({document,expected,signal})=>probeRun(document,expected,signal)}};
  return type;

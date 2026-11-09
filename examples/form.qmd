@@ -1,0 +1,15 @@
+# Choose a table slice
+
+Choose a fruit and submit. Widgets use native controls; worker HTML is never inserted into the editor.
+
+```{python}
+import marimo as mo
+choice = mo.ui.dropdown(["apple", "pear", "plum"], value="pear", label="Fruit")
+choice.form()
+```
+
+```{python}
+import pandas as pd
+fruit = pd.DataFrame({"name": ["apple", "pear", "plum"], "price": [2, 3, 4]})
+fruit[fruit["name"] == choice.value]
+```

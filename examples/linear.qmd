@@ -1,0 +1,17 @@
+---
+notebook-online:
+  mode: linear
+---
+
+# Execution order matters
+
+Run cells in any order. Try running the second cell twice. Use Restart and run all to return to a clean state.
+
+```{python}
+count = 0
+```
+
+```{python}
+count += 1
+count
+```

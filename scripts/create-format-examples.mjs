@@ -1,0 +1,4 @@
+import fs from 'node:fs/promises';import {Notebook} from '../src/model/notebook.js';import {exportIpynb} from '../src/formats/ipynb.js';
+const model=new Notebook({src:await fs.readFile('examples/jupyter.qmd','utf8'),notebook:{mode:'linear',autorun:false,stdin:''}});model.cells.find(c=>c.kind==='python').outputs=[{output_type:'execute_result',data:{'text/plain':'6'},metadata:{},execution_count:1}];model.cells.find(c=>c.kind==='python').executionCount=1;
+await fs.writeFile('examples/jupyter.ipynb',exportIpynb(model).source);
+await fs.writeFile('examples/marimo-demo.py','import marimo\n__generated_with = "0.23.0"\napp = marimo.App()\n\n@app.cell\ndef _():\n    import marimo as mo\n    return (mo,)\n\n@app.cell\ndef _(mo):\n    mo.md("## Hello from marimo")\n    return\n\n@app.cell\ndef _():\n    x = 21\n    return (x,)\n\n@app.cell\ndef _(x):\n    x * 2\n    return\n\nif __name__ == "__main__":\n    app.run()\n');

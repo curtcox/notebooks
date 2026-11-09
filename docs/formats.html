@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"><title>Formats and round trips · Notebook Online</title><link rel="icon" href="../icon.svg"><link rel="stylesheet" href="../src/app.css"></head><body><nav class="guide"><a href="../">Notebook Online</a> · <a href="index.html">Notebook guide</a> · <a href="../gallery.html">Sample gallery</a></nav><main class="guide"><h1>Formats and round trips</h1>
+<p>Open supports file selection, drag-and-drop, an explicit HTTPS fetch, and HashBin content. A URL with <code>?open=</code> only suggests a download; you must click Fetch notebook. Imported code always starts with Auto-run off.</p>
+<p>Every import/export shows a kept / converted / dropped report. These conversions are partial:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Retained</th>
+<th>Important limits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jupyter nbformat 4</td>
+<td>Source, ids, unknown notebook/cell metadata, attachments, optional outputs</td>
+<td>nbformat 3 must be converted first; interactive JavaScript outputs are inert</td>
+</tr>
+<tr>
+<td>marimo Python</td>
+<td>Cell bodies, function names and regenerated dependencies</td>
+<td>AST import; raw cells dropped, R stored as disabled Python source; layout configuration omitted</td>
+</tr>
+<tr>
+<td>Jupytext percent</td>
+<td>Source, kinds, cell options, mode</td>
+<td>IDs/function names and outputs omitted; unknown YAML header metadata is not mapped</td>
+</tr>
+<tr>
+<td>Quarto</td>
+<td>Source, cell options, front matter, mode</td>
+<td>Outputs, Jupyter metadata and stdin omitted</td>
+</tr>
+<tr>
+<td>MyST Markdown</td>
+<td>Code-cell fences, options and cell breaks</td>
+<td>Converted to the Notebook Markdown subset; same metadata limits as Quarto</td>
+</tr>
+</tbody>
+</table>
+<p>Jupyter imports larger than 5 MiB omit embedded outputs before normalizing source. Files above 50 MiB are rejected. Documents and links are limited to 5 MiB after normalization.</p>
+<p>Jupyter SQL and R cells use <code>%%sql</code> / <code>%%R</code>; R-only exports use the ir kernel. Attachment images are inlined for Markdown formats and returned to attachments on Jupyter export. Unknown metadata is kept in the current editor model but does not travel in source-only share links.</p>
+</main><!-- source:ac1cc5371bdbacb6f5e144ce1dff4865f88e89c312c9d9ebc7eb2a7b495c4133 --></body></html>

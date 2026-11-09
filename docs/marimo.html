@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"><title>marimo compatibility · Notebook Online</title><link rel="icon" href="../icon.svg"><link rel="stylesheet" href="../src/app.css"></head><body><nav class="guide"><a href="../">Notebook Online</a> · <a href="index.html">Notebook guide</a> · <a href="../gallery.html">Sample gallery</a></nav><main class="guide"><h1>marimo compatibility</h1>
+<p><code>import marimo as mo</code> loads an original, unaffiliated compatibility subset. It is not marimo's React frontend or its full Python API. Real marimo is used in CI to validate generated files.</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Support</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://mo.md">mo.md</a></td>
+<td>Markdown, including f-string values</td>
+</tr>
+<tr>
+<td>mo.plain_text / as_html</td>
+<td>Inert text / representation objects</td>
+</tr>
+<tr>
+<td>hstack / vstack / callout / accordion / tabs</td>
+<td>Data-driven layouts with native tabs and disclosure controls</td>
+</tr>
+<tr>
+<td>output.append / replace / clear</td>
+<td>Current cell output</td>
+</tr>
+<tr>
+<td>stop</td>
+<td>Stops current cell and descendants cleanly</td>
+</tr>
+<tr>
+<td>sql</td>
+<td>DuckDB over notebook dataframe names</td>
+</tr>
+<tr>
+<td>state</td>
+<td>Persistent getter/setter; changes schedule downstream reactive cells</td>
+</tr>
+<tr>
+<td>ui</td>
+<td>Native controls listed in the widgets guide</td>
+</tr>
+<tr>
+<td>Unsupported APIs</td>
+<td>Clear NotImplementedError with a guide link</td>
+</tr>
+</tbody>
+</table>
+<p>UI objects displayed directly or embedded into <a href="http://mo.md">mo.md</a> f-strings render as native controls. hstack/vstack arrange controls without interpreting worker-supplied HTML. Python↔R exchange, anywidget, interactive Altair/Plotly, files and chat widgets are outside this release.</p>
+</main><!-- source:3305edc6263a686a5db130b1d4dfdde8d4cf798a0c8eaa8d440debf6a6524154 --></body></html>

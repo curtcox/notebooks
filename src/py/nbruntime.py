@@ -130,6 +130,8 @@ async def run(source, cell_id, reactive=False, delete=None, kind='python', outpu
     try:
         import marimo
         marimo._begin(cell_id, emit)
+        import turtle, turtle_svg
+        turtle._reset(lambda item: emit({'output_type':'display_data','data':{'image/svg+xml':turtle_svg.render(item)},'metadata':{}}) if item.get('type')=='turtle' else None)
         if reactive:
             delete_names(delete or [])
         os.environ['MPLBACKEND'] = 'agg'
@@ -160,6 +162,7 @@ async def run(source, cell_id, reactive=False, delete=None, kind='python', outpu
             if inspect.isawaitable(value):
                 await value
         figures()
+        turtle._finish()
     except BaseException as caught:
         from marimo import Stop
         if isinstance(caught, Stop):
@@ -170,3 +173,13 @@ async def run(source, cell_id, reactive=False, delete=None, kind='python', outpu
     finally:
         sys.stdout, sys.stderr, sys.stdin, builtins.input = previous
     return {'ok': error is None, 'error': error, 'stopped': stopped, 'executionCount': _count}
+
+
+def update_widget(widget_id, value):
+    import marimo
+    old = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = Stream('stdout'), Stream('stderr')
+    try:
+        return marimo._set_value(widget_id, value)
+    finally:
+        sys.stdout, sys.stderr = old

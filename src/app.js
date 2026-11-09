@@ -9,7 +9,7 @@ import {renderWidget} from './ui/widgets.js';
 import {importNotebook,exportNotebook} from './formats/sniff.js';
 import {showReport} from './formats/report.js';
 import {NotebookStore} from './hashbin.mjs';
-import {mountAi} from './ai.mjs';
+import {mountAi,handleAiCallback} from './ai.mjs';
 const $=id=>document.getElementById(id),status=text=>{$('status').textContent=text;};
 export const model=new Notebook({src:examples[0].src});
 let sourceEditor,sourceMode=false,sourceTimer,sourceSync=false,savedCID=null,saveFingerprint=null,hashbinPanel,aiUI,saveWaiter;
@@ -49,7 +49,7 @@ const kernel=new PythonClient({onEvent:event=>{
   if(output.output_type==='clear_output')cell.outputs=[];
   else if(output.output_type==='update_display_data'){
    const displayId=output.transient?.display_id;
-   for(const item of model.cells)for(let i=0;i<item.outputs.length;i++)if(displayId&&item.outputs[i].transient?.display_id===displayId){item.outputs[i]=output;cells.update(item.id);}
+   for(const item of model.cells)for(let i=0;i<item.outputs.length;i++)if(displayId&&item.outputs[i].transient?.display_id===displayId){item.outputs[i]={...output,output_type:item.outputs[i].output_type};cells.update(item.id);}
   }else cell.outputs.push(output);
   cells.update(cell.id);
  }else if(event.type==='fatal')status(event.error);
@@ -59,7 +59,7 @@ async function runSelected(id,options){const cell=model.cells.find(c=>c.id===id)
 async function stateChanges(){const owners=[...scheduler.stateEvents];scheduler.stateEvents.clear();for(const owner of owners)await scheduler.widget(owner);}
 async function widgetChanged(widgetId,value,generation){try{if(generation!==kernel.generation)throw Error('Widget belongs to a previous kernel. Run its cell again.');if(scheduler.busy){status('Wait for the current batch or use Stop.');return;}const owner=await kernel.widget(widgetId,value);await scheduler.widget(owner);await stateChanges();}catch(error){status(error.message);}}
 const cells=new CellList({container:$('cells'),model,onEdit:changed,onStructure:structure,onRun:runSelected,onAsk:cell=>openAi(cell),onWidget:(container,spec,generation)=>renderWidget(container,spec,(id,value)=>widgetChanged(id,value,generation))});
-const shell=kit.createShell({config,actions:[
+const shell=kit.createShell({config:{...config,docs:new URL('docs/',location.href).href,gallery:new URL('gallery.html',location.href).href},actions:[
  {id:'run',label:'▶ Run',onClick:()=>runSelected(cells.selected)},
  {id:'run-all',label:'Run all',onClick:async()=>{await scheduler.run();await stateChanges();outline();}},
  {id:'stop',label:'Stop',onClick:()=>scheduler.stop()},
@@ -71,12 +71,13 @@ const shell=kit.createShell({config,actions:[
  {id:'open-url',label:'Open from URL',extra:true,onClick:()=>openURLDialog.open()},
  {id:'download',label:'Download',extra:true,onClick:()=>downloadDialog.open()},
  {id:'share-open',label:'Share',onClick:()=>share.open()},
- {id:'qr-open',label:'QR',extra:true,onClick:()=>qr.open(savedCID&&saveFingerprint===fingerprint()?urlState.link(location.href,savedCID):urlState.build(snapshot()).href)},
+ {id:'qr-open',label:'QR',extra:false,onClick:()=>qr.open(savedCID&&saveFingerprint===fingerprint()?urlState.link(location.href,savedCID):urlState.build(snapshot()).href)},
  {id:'source-toggle',label:'Source',extra:true,onClick:()=>toggleSource()},
  {id:'ask-open',label:'Ask',extra:true,onClick:()=>openAi()},
  {id:'undo',label:'Undo structure',extra:true,onClick:()=>{model.undo();structure();}},
  {id:'shortcuts',label:'Keyboard shortcuts',extra:true,onClick:()=>shortcuts.open()}
 ]});
+shell.header.querySelector('.fk-brand').href='./';
 $('run').classList.add('primary');$('stop').disabled=true;
 const mode=document.createElement('select');mode.id='mode';mode.setAttribute('aria-label','Execution mode');mode.innerHTML='<option value="reactive">Reactive</option><option value="linear">Linear</option>';
 mode.onchange=()=>{if(!confirm('Changing execution mode restarts the kernel. Continue?')){mode.value=model.settings.mode;return;}scheduler.stop();model.settings.mode=mode.value;model.settings.autorun=mode.value==='reactive';model.revision++;syncSettings();structure(undefined,{run:false});if(confirm('Restart and run all cells now?'))void scheduler.run();};
@@ -90,14 +91,14 @@ $('append-cell').onclick=()=>newCellDialog.open();
 const store=new NotebookStore({kernel});
 hashbinPanel=new kit.HashBinPanel({store,urlState,getSnapshot:snapshot,getFingerprint:fingerprint,container:shell.drawer.body,
  onLoad:async(doc,cid)=>{load(doc,{imported:Boolean(doc._import),result:doc._import});savedCID=cid;saveFingerprint=fingerprint();history.replaceState(null,'',cid?urlState.link(location.href,cid):urlState.build(snapshot()).href);shell.drawer.dialog.close();},
- onSaved:async(cid,fp,href)=>{savedCID=cid;saveFingerprint=fp;urlState.cancel();history.replaceState(null,'',href);if(saveWaiter){hashbinPanel.ui.close();saveWaiter(href);saveWaiter=null;}}
+ onSaved:async(cid,fp,href)=>{savedCID=cid;saveFingerprint=fp;urlState.cancel();history.replaceState(null,'',href);if(saveWaiter){const resolve=saveWaiter;saveWaiter=null;hashbinPanel.dialog.close();resolve(href);}}
 });
 if(!config.hashbinClientId){hashbinPanel.saveButton.title='Saving requires a registered client ID; open for setup details.';const note=document.createElement('p');note.id='hashbin-setup';note.textContent='Saving is disabled until Notebook Online is registered with HashBin. Load works without registration. R execution requires approval in this build.';shell.drawer.body.append(note);}
 const share=kit.createShareDialog({urlState,getSnapshot:snapshot,onSave:config.hashbinClientId?()=>hashbinPanel.openSave():undefined});
 const qr=kit.createQrDialog({config,urlState,onSave:config.hashbinClientId?()=>new Promise(resolve=>{saveWaiter=resolve;void hashbinPanel.openSave();}):undefined,onLoad:async intent=>{if(intent.kind==='cid')await hashbinPanel.load(intent.cid);else {const doc=intent.doc??intent.intent?.doc;if(!doc)throw Error('QR image does not contain a notebook.');load(doc);history.replaceState(null,'',urlState.build(snapshot()).href);}}});
 hashbinPanel.dialog.addEventListener('close',()=>{if(saveWaiter){saveWaiter(null);saveWaiter=null;}});
 drafts.mount(shell.drawer.body,doc=>{load(doc);changed(undefined,{run:false});});
-for(const [label,href]of [['Python docs ↗','https://docs.python.org/3/'],['Pyodide packages ↗','https://pyodide.org/en/stable/usage/packages-in-pyodide.html'],['R docs ↗','https://cran.r-project.org/manuals.html'],['DuckDB SQL ↗','https://duckdb.org/docs/stable/sql/introduction'],['marimo docs ↗','https://docs.marimo.io/'],['Jupyter docs ↗','https://docs.jupyter.org/']]){const a=document.createElement('a');a.textContent=label;a.href=href;a.target='_blank';a.rel='noopener noreferrer';shell.drawer.body.append(a);}
+for(const [label,href]of [['Python docs ↗','https://docs.python.org/3/'],['Pyodide packages ↗','https://pyodide.org/en/stable/usage/packages-in-pyodide.html'],['R docs ↗','https://cran.r-project.org/manuals.html'],['DuckDB SQL ↗','https://duckdb.org/docs/stable/sql/introduction'],['marimo docs ↗','https://docs.marimo.io/'],['Jupyter docs ↗','https://docs.jupyter.org/']]){const a=document.createElement('a');a.textContent=label;a.setAttribute('aria-label',label.replace(/docs/gi,'documentation'));a.href=href;a.target='_blank';a.rel='noopener noreferrer';shell.drawer.body.append(a);}
 function syncSource(){if(sourceEditor){sourceSync=true;sourceEditor.setValue(serialize(model),-1);sourceSync=false;}}
 function toggleSource(){sourceMode=!sourceMode;$('source-pane').hidden=!sourceMode;$('cells').hidden=sourceMode;$('append-cell').hidden=sourceMode;if(sourceMode){if(!sourceEditor){sourceEditor=ace.edit('source-editor');sourceEditor.session.setMode('ace/mode/markdown');sourceEditor.setOptions({showPrintMargin:false,useWorker:false,fontSize:14});sourceEditor.on('change',()=>{if(sourceSync)return;clearTimeout(sourceTimer);sourceTimer=setTimeout(()=>{if(!sourceMode)return;model.editSource(sourceEditor.getValue());cells.render();changed();},750);});}syncSource();sourceEditor.focus();}else{clearTimeout(sourceTimer);model.editSource(sourceEditor.getValue());structure();}}
 async function importText(text){const revision=++loadRevision;status('Reading notebook…');const result=await importNotebook(text,{kernel});if(revision!==loadRevision){status('Import cancelled because the notebook changed.');return;}load(result.doc,{imported:true,result});urlState.write(snapshot());status('Imported. Auto-run is off; use Run all.');}
@@ -114,7 +115,7 @@ async function openAi(cell){try{if(!aiUI)aiUI=await mountAi({getSnapshot:snapsho
 async function openLocation(){try{
  const intent=urlState.parse(location.href);
  if(intent.kind==='source')load(intent.doc);
- else if(intent.kind==='example'){const example=examples.find(item=>item.id===intent.id);if(!example)throw Error('Unknown example.');load({src:example.src,notebook:example.settings});}
+ else if(intent.kind==='example'){const example=examples.find(item=>item.id===intent.id);if(!example)throw Error('Unknown example.');load({src:example.src,notebook:example.settings});urlState.write(snapshot());}
  else if(intent.kind==='cid'){await hashbinPanel.load(intent.cid);}
  else if(intent.kind==='publish'){const result=await hashbinPanel.published(location.hash);if(result?.error)history.replaceState(null,'',urlState.build(snapshot()).href);}
  if(!intent.run){model.settings.autorun=false;syncSettings();}
@@ -122,8 +123,11 @@ async function openLocation(){try{
  if(model.settings.autorun&&!suggested)void scheduler.run({automatic:true});
  const selected=new URL(location.href).searchParams.get('cell');if(selected&&cells.nodes.has(selected)){cells.select(selected);cells.nodes.get(selected).node.scrollIntoView();}
 }catch(error){status(error.message);}}
-await openLocation();cells.render();syncSettings();outline();document.body.dataset.ready='true';
+let callback=false;try{callback=handleAiCallback();}catch(error){callback=true;status(error.message);}
+if(!callback)await openLocation();cells.render();syncSettings();outline();document.body.dataset.ready='true';
 window.addEventListener('popstate',openLocation);window.addEventListener('hashchange',openLocation);
 globalThis.NotebookOnline={model,cells,snapshot,load,importText,select:id=>cells.select(id),run:runSelected,get editor(){return sourceEditor;},setSource:src=>{model.editSource(src);structure();},urlState,kernels:{python:kernel},scheduler,get ai(){return aiUI;}};
 const offline=new kit.OfflineClient({onStatus:result=>{shell.offlineStatus.textContent=result.ready?'Available offline':result.error??'Preparing offline copy…';},onUpdate:()=>{const button=document.createElement('button');button.textContent='Update and reload';button.onclick=()=>{drafts.attempt(snapshot(),true);navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});offline.activateUpdate();};shell.drawer.body.append(button);}});
 offline.init().catch(error=>{shell.offlineStatus.textContent=error.message;});
+const repair=document.createElement('button');repair.id='offline-repair';repair.textContent='Repair offline copy';repair.onclick=async()=>{repair.disabled=true;try{await offline.repair();}catch(error){status(error.message);}finally{repair.disabled=false;}};shell.drawer.body.append(repair);
+const packages=document.createElement('button');packages.id='offline-packages';packages.textContent='Make packages available offline';packages.onclick=async()=>{packages.disabled=true;try{await offline.init();const worker=offline.registration?.active;if(!worker)throw Error('Wait for offline installation to finish, then retry.');const channel=new MessageChannel();channel.port1.onmessage=({data})=>{status(data.error??(data.ready?'Packages are available offline.':`Caching packages… ${data.progress}/${data.total}`));if(data.ready||data.error){channel.port1.close();packages.disabled=false;}};worker.postMessage({type:'cache-packages'},[channel.port2]);}catch(error){status(error.message);packages.disabled=false;}};shell.drawer.body.append(packages);

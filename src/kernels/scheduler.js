@@ -11,17 +11,18 @@ export function buildGraph(cells, analyses) {
 }
 export function descendants(graph,ids){const result=new Set(ids);for(const id of result)for(const child of graph.nodes.get(id)?.children??[])result.add(child);return result;}
 export class Scheduler {
- constructor({model,kernel,onChange=()=>{},onStatus=()=>{},timers=globalThis}){Object.assign(this,{model,kernel,onChange,onStatus,timers});this.version=0;this.previousDefs=new Map();this.graph={nodes:new Map(),errors:new Map(),order:[]};this.busy=false;this.stateEvents=new Set();}
+ constructor({model,kernel,onChange=()=>{},onStatus=()=>{},timers=globalThis}){Object.assign(this,{model,kernel,onChange,onStatus,timers});this.version=0;this.previousDefs=new Map();this.graph={nodes:new Map(),errors:new Map(),order:[]};this.busy=false;this.stateEvents=new Set();this.editedAffected=new Set();}
  async analyze(){const revision=this.model.revision,cells=[...this.model.cells];const analyses=cells.some(c=>['python','sql'].includes(c.kind))?await this.kernel.analyze(cells):cells.map(()=>({defs:[],refs:[],deletes:[]}));if(revision!==this.model.revision)throw Error('Notebook changed during analysis.');this.graph=buildGraph(cells,analyses);cells.forEach((cell,i)=>{cell.analysis=analyses[i];cell.error=this.graph.errors.get(cell.id);if(cell.error)cell.status='error';this.onChange(cell.id);});return this.graph;}
  mark(ids){for(const id of descendants(this.graph,ids)){const cell=this.model.cells.find(c=>c.id===id);if(cell){cell.status='stale';this.onChange(id);}}}
- edit(id,{auto=true}={}){this.timers.clearTimeout(this.debounce);this.version++;if(this.busy)this.stop('Notebook changed — kernel restarted.');if(id)this.mark([id]);this.debounce=this.timers.setTimeout(()=>{this.refresh(id,auto).catch(error=>this.onStatus(error.message));},750);}
- async refresh(id,auto){await this.analyze();const ids=id?[id]:this.model.cells.filter(c=>['python','sql','r'].includes(c.kind)).map(c=>c.id);this.mark(ids);if(auto&&this.model.settings.mode==='reactive'&&this.model.settings.autorun)await this.run({ids,automatic:true,analyzed:true});}
+ edit(id,{auto=true}={}){this.timers.clearTimeout(this.debounce);this.version++;if(this.busy)this.stop('Notebook changed — kernel restarted.');if(id){for(const affected of descendants(this.graph,[id]))this.editedAffected.add(affected);this.mark([id]);}this.debounce=this.timers.setTimeout(()=>{this.refresh(id,auto).catch(error=>this.onStatus(error.message));},750);}
+ async refresh(id,auto){await this.analyze();const ids=id?[...new Set([id,...this.editedAffected])]:this.model.cells.filter(c=>['python','sql','r'].includes(c.kind)).map(c=>c.id);this.editedAffected.clear();this.mark(ids);if(auto&&this.model.settings.mode==='reactive'&&this.model.settings.autorun)await this.run({ids,automatic:true,analyzed:true});}
  async run({ids=null,automatic=false,analyzed=false,descendantsOnly=false}={}){
   this.timers.clearTimeout(this.debounce);if(this.busy){this.onStatus('A batch is already running. Use Stop to restart.');return;}
   const version=++this.version;this.busy=true;this.onStatus('Preparing notebook…');
   try{
    if(!analyzed)await this.analyze();if(version!==this.version)return;
    const reactive=this.model.settings.mode==='reactive',selected=ids?new Set(ids):null;
+   if(reactive&&selected&&!descendantsOnly){for(const affected of this.editedAffected)selected.add(affected);this.editedAffected.clear();}
    let wanted=selected?(reactive?descendants(this.graph,selected):selected):new Set(this.model.cells.map(c=>c.id));
    // A manual reactive run first resolves stale/missing ancestors, then descendants.
    if(reactive&&selected&&!descendantsOnly){const visit=id=>{for(const parent of this.graph.nodes.get(id)?.parents??[]){const c=this.model.cells.find(c=>c.id===parent);if(c&&c.status!=='ok'&&!wanted.has(parent)){wanted.add(parent);visit(parent);}}};for(const id of [...wanted])visit(id);}
@@ -30,6 +31,7 @@ export class Scheduler {
    if(!ids||!this.previousDefs.size)await this.kernel.resetInput(this.model.settings.stdin);
    // Deletions remove their old definitions even when no surviving cell references them.
    for(const [oldId,names]of this.previousDefs)if(!this.model.cells.some(c=>c.id===oldId)){await this.kernel.deleteNames(names);this.previousDefs.delete(oldId);}
+   if(reactive)await this.kernel.deleteNames([...new Set([...wanted].flatMap(id=>this.previousDefs.get(id)??[]))]);
    const failed=new Set(this.graph.errors.keys());
    this.automatic=automatic;this.elapsed=0;
    for(const cell of list){

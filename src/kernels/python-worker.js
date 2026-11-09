@@ -8,7 +8,7 @@ const ready=(async()=>{
  send({type:'status',text:'Loading Python… (~12 MB on first visit)'});
  const [{loadPyodide},asm]=await Promise.all(['pyodide.mjs','pyodide.asm.mjs'].map(f=>hashbinSandbox.import(RUNTIME+f)));
  py=await loadPyodide({indexURL:RUNTIME,createPyodideModule:asm.default});
- const files=['nbruntime.py','analyze.py','ipython_compat.py','sqlcell.py','marimo/__init__.py'];
+ const files=['nbruntime.py','analyze.py','ipython_compat.py','sqlcell.py','marimo/__init__.py','turtle.py','turtle_svg.py'];
  const texts=await Promise.all(files.map(async f=>{const r=await fetch('py/'+f);if(!r.ok)throw Error('Runtime helper download failed: '+f);return r.text();}));
  py.FS.mkdirTree('/opt/notebookonline/marimo');files.forEach((f,i)=>py.FS.writeFile('/opt/notebookonline/'+f,texts[i]));
  py.runPython("import sys, os\nsys.path.insert(0, '/opt/notebookonline')\nos.environ['MPLBACKEND']='agg'");
@@ -25,7 +25,7 @@ async function handle(data){try{
  if(action==='parse-marimo'||action==='export-marimo'){const expression=action==='parse-marimo'?"analyze.parse_marimo(_request['source'])":"analyze.export_marimo(_request['cells'])";send({type:'result',request,result:JSON.parse(py.runPython(`json.dumps(${expression})`))});return;}
  if(action==='input'){py.runPython("nbruntime.reset_input(_request['stdin'])");send({type:'result',request,result:true});return;}
  if(action==='delete'){py.runPython("nbruntime.delete_names(_request['names'])");send({type:'result',request,result:true});return;}
- if(action==='widget'){const result=py.runPython("marimo._set_value(_request['widgetId'], _request['value'])");send({type:'result',request,result});return;}
+ if(action==='widget'){cellId=py.runPython("marimo._widgets[_request['widgetId']]._owner");const result=py.runPython("nbruntime.update_widget(_request['widgetId'], _request['value'])");send({type:'result',request,result});return;}
  if(action!=='run')throw Error('Unknown kernel action.');
  cellId=data.id;outputBytes=outputLines=0;truncated=false;send({type:'status',id:cellId,text:'Loading packages…'});
  if(data.kind==='sql'||/^%%sql\b/m.test(data.source))await py.loadPackage(['duckdb','pandas']);

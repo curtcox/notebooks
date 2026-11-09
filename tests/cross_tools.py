@@ -5,6 +5,7 @@ import json
 import subprocess
 from pathlib import Path
 import nbformat
+import jsonschema
 import jupytext
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'/'py'))
 import analyze
@@ -12,6 +13,7 @@ root=Path('test-results/formats')
 (root/'marimo.py').unlink(missing_ok=True)
 notebook=nbformat.read(root/'notebook.ipynb',as_version=4)
 nbformat.validate(notebook)
+jsonschema.validate(json.loads((root/'notebook.ipynb').read_text()), json.loads(Path('tests/fixtures/nbformat/nbformat.v4.5.schema.json').read_text()))
 percent=jupytext.read(root/'percent.py')
 assert [c.cell_type for c in percent.cells] == [c.cell_type for c in notebook.cells]
 assert percent.cells[1].source == notebook.cells[1].source

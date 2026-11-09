@@ -1,0 +1,13 @@
+---
+notebook-online:
+  mode: linear
+---
+
+# From a Jupyter notebook
+
+Open the .ipynb fixture from examples/jupyter.ipynb to inspect imported outputs. Downloads support current outputs; share links contain source and settings only.
+
+```{python}
+#| id: jupyter-cell
+sum([1, 2, 3])
+```

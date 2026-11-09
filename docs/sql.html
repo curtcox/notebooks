@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"><title>SQL cells · Notebook Online</title><link rel="icon" href="../icon.svg"><link rel="stylesheet" href="../src/app.css"></head><body><nav class="guide"><a href="../">Notebook Online</a> · <a href="index.html">Notebook guide</a> · <a href="../gallery.html">Sample gallery</a></nav><main class="guide"><h1>SQL cells</h1>
+<p>SQL uses DuckDB 1.5.1 inside the Python worker. It loads on demand with pandas; there is no separate SQL worker. One in-memory connection survives across cells.</p>
+<p>A SQL cell can query pandas, Polars and Arrow objects by their Python names. Its result is a pandas dataframe. Set an output option to make the result available to other Python cells:</p>
+<pre><code class="language-markdown">```{sql}
+#| output: totals
+select city, sum(amount) as total
+from orders
+group by city
+```
+</code></pre>
+<p>Without an output name, the result uses <code>_df</code>. In reactive mode, explicit public output names define graph dependencies. SQL references are conservatively inferred from identifiers matching notebook names. Name matching in string literals/comments may overapproximate dependencies.</p>
+<p>Python cells may use %%sql or mo.sql(). An explicit SQL cell with an output option gives the analyzer the clearest dependency information. DuckDB databases and files live in kernel memory and are discarded on restart.</p>
+</main><!-- source:74a38aa9c24a5d72c0576c8d0cce258bc8ea8e9f44ea0103a46b6de060e900de --></body></html>

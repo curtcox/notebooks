@@ -1,0 +1,21 @@
+name: Test Notebook Online
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    uses: curtcox/Tools-for-pages-with-state-in-URL-fragments/.github/workflows/test.yml@v2
+    with:
+      node-version: '24'
+      pre-test: python3 -m pip install -r tests/requirements.txt && npm run test:python && TEST_PACKAGES=1 npm test && npm run test:formats
+      kit-path: vendor/fragment-kit-v0.4.3
+      contract-config: testing-contract.config.mjs
+      server-command: PORT=8000 node tests/browser/server.cjs
+      browser-command: TEST_PACKAGES=1 FULL_GALLERY=1 npm run test:browser
+  kit:
+    uses: curtcox/Tools-for-pages-with-state-in-URL-fragments/.github/workflows/kit-check.yml@v2
+    with:
+      kit-path: vendor/fragment-kit-v0.4.3

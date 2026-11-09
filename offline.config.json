@@ -11,16 +11,53 @@
     "ace",
     "vendor/fragment-kit-v0.4.3/src",
     "vendor/fragment-kit-v0.4.3/vendor",
-    "vendor/markdown-it-14.1.0",
+    "vendor/markdown-it-14.3.3",
     "vendor/katex-0.19.1",
     "docs",
-    "examples"
+    "examples",
+    "gallery.html",
+    "gallery/previews",
+    "ai-suite.json"
   ],
   "remote": {
     "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.mjs": "6f1d60f7bf529beb300f0f47983c921d3982363640ba20af0e38efdddbc66109",
     "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.asm.mjs": "f7cdc8ece80678ceb712f8e65ebe6d3a83203a180c399865f49612a051693635",
     "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.asm.wasm": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6",
     "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/python_stdlib.zip": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
-    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010"
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/ipython-9.12.0-py3-none-any.whl": "0ae2295a90e56496d2a25e8c44ea4d5a5cfb891cca8439eb61d06b68ef145d9a",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/asttokens-3.0.1-py3-none-any.whl": "c69b99c67d1871f8f80232ca5d0cb5eafbf7e69a946e7981e8f24b31370e2675",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/six-1.17.0-py2.py3-none-any.whl": "228c50f73aa7addf2c2ccf2979c256802a59ab69cad8152b31b9443cc8140f42",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/decorator-5.2.1-py3-none-any.whl": "da941fd8a421e3e0d0d8b4efa5ec775d63ba553c7262de9fd40ddabee659f547",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/executing-2.2.1-py2.py3-none-any.whl": "cc5b8219eca44e13f8ca2011d6a8f98d9a57ec75bdcadf1c56e4b779e5f69436",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/matplotlib_inline-0.2.1-py3-none-any.whl": "2b749891f370a4d6830108b2e21d0e1b929685723c419e288def2ea1dc76428e",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/traitlets-5.14.3-py3-none-any.whl": "9c58da4647924c8f1bb932c64c8a506b309c47115d97668241ea4734125eb320",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/prompt_toolkit-3.0.52-py3-none-any.whl": "0ba08e03583dacc94338b608a88ee95e83ef1c9d4ec1403127a06e80d7a01970",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/wcwidth-0.6.0-py3-none-any.whl": "ae04c5081c1920e605e9d8b7dffc368a35d8de9b698468819d52e4994a883b76",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pure_eval-0.2.3-py3-none-any.whl": "8a302142ea19084d879dd4b411552eb06cd25b37eaa0d4cc46c45ca49c3d1eea",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pygments-2.20.0-py3-none-any.whl": "6e0fd0e83d3e725a668aa73110112ffe67e59feb4516eeff3a0b8c12a236462f",
+    "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/stack_data-0.6.3-py3-none-any.whl": "b28e173d32b19041387f7bd3865b2dec8e100c1237f009f402d3549fecbba864"
+  },
+  "metadata": {
+    "packageHashes": {
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/duckdb-1.5.1-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "b53411919dda46ebeda004835fd04c8168256d37c42ceb54d75454cbcc04f81c",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pandas-3.0.2-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "45ff57772cc2f366a8582c7d3097cc4e6676342ecd5a3c08184a43462d5a02ae",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "a292c1f5d7d8a2208cd5e94fc467604c131cabcd2fc14fed6eefde121e7fabdf",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/python_dateutil-2.9.0.post0-py2.py3-none-any.whl": "9b13365edf9c188f570baf9c540bbb3029ada2a2dacb9694b3659941693ee9e5",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/six-1.17.0-py2.py3-none-any.whl": "228c50f73aa7addf2c2ccf2979c256802a59ab69cad8152b31b9443cc8140f42",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pytz-2026.1.post1-py2.py3-none-any.whl": "b8249d6450146e0b61e6d710dc02ebb35a904796c4c2f97fe87d4ac5872db36a",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/polars-1.33.1-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "5131b0d5c92c7a24fe904c3c48c3dc2be16be9a8cae77a2cff064136346b7fab",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyarrow-22.0.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "e681ddbfaf096dd8c42dd5045342c1f218b853c42c08678c91011baf1f9f2d2d",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide_unix_timezones-1.0.0-py3-none-any.whl": "0f5eed55b123bdcbbe704d8d0808efb1a086d9924c0e534b8d2d1fb92bf5acf7",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/matplotlib-3.10.8-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "722857932f8f62eac64f8439af15c94d427f9fb945f9590cd242805c983d2d54",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/contourpy-1.3.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "0ac15ebf9f820d2d1c3526388aa2818b631cb6c4aae1682efd6b4cc12c1f302c",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/cycler-0.12.1-py3-none-any.whl": "8ee450085f15b47f78b034d60059af6a3649e98fa5dde073363437742cc0b4ea",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/fonttools-4.62.1-py3-none-any.whl": "0d1516e073fd0a8d8e6d9af46417b6a26209a42518024a18f7085e72d2599605",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/kiwisolver-1.5.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "47781998156721147c128a3c74547d5703e0e3cc454d8203e629339368308a93",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/packaging-26.1-py3-none-any.whl": "565acbbea54da30348b6d68b6a54373e6f777987db9f1db6966b4b3a5060d303",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pillow-12.2.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl": "e29838b7a756e4ee0f27a9cfa9a387ee0dfa2e9dd44be2dd595130b9f9d93ac3",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyparsing-3.3.2-py3-none-any.whl": "f0dd8225b5f8e945980b400bd465b4b90cb0498a2eede0d9dbea98372f6110c5",
+      "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/micropip-0.11.1-py3-none-any.whl": "e2d52886594fd4cd0d0847110a1c34ae0134d3a970eb4496d3b5eb31ee2d8af6"
+    }
   }
 }

@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 // Real engine coverage is opt-in locally and mandatory in CI.
 test('Pyodide persistent namespace, private names, SQL, widgets and matplotlib',{skip:process.env.TEST_PACKAGES!=='1',timeout:240000},async()=>{
  const {loadPyodide}=await import('pyodide');const py=await loadPyodide({packageCacheDir:'.pyodide-cache'});
- py.FS.mkdirTree('/opt/notebookonline/marimo');for(const file of ['analyze.py','nbruntime.py','ipython_compat.py','sqlcell.py','marimo/__init__.py'])py.FS.writeFile('/opt/notebookonline/'+file,await fs.readFile('src/py/'+file,'utf8'));
+ py.FS.mkdirTree('/opt/notebookonline/marimo');for(const file of ['analyze.py','nbruntime.py','ipython_compat.py','sqlcell.py','marimo/__init__.py','turtle.py','turtle_svg.py'])py.FS.writeFile('/opt/notebookonline/'+file,await fs.readFile('src/py/'+file,'utf8'));
  py.runPython("import sys,os\nsys.path.insert(0,'/opt/notebookonline')\nos.environ['MPLBACKEND']='agg'\nimport nbruntime,analyze,marimo\nitems=[]\nnbruntime.emit=items.append");
  let result=JSON.parse(await py.runPythonAsync("import json\njson.dumps(await nbruntime.run('x = 21', 'a', True))"));assert.equal(result.ok,true);
  result=JSON.parse(await py.runPythonAsync("json.dumps(await nbruntime.run('x*2', 'b', True))"));assert.equal(result.ok,true);assert.equal(py.runPython("items[-1]['data']['text/plain']"),'42');

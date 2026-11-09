@@ -1,0 +1,18 @@
+# A slider, a curve
+
+Change the frequency. Cells that use the slider rerun automatically.
+
+```{python}
+import marimo as mo
+frequency = mo.ui.slider(1, 10, value=3, label="Frequency")
+frequency
+```
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+x = np.linspace(0, 2 * np.pi, 150)
+plt.plot(x, np.sin(frequency.value * x), color="#225b50")
+plt.title(f"Frequency: {frequency.value}")
+plt.show()
+```

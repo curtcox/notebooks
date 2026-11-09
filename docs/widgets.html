@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"><title>Widgets · Notebook Online</title><link rel="icon" href="../icon.svg"><link rel="stylesheet" href="../src/app.css"></head><body><nav class="guide"><a href="../">Notebook Online</a> · <a href="index.html">Notebook guide</a> · <a href="../gallery.html">Sample gallery</a></nav><main class="guide"><h1>Widgets</h1>
+<p>Display a widget in its own cell, then reference its value from another cell:</p>
+<pre><code class="language-python">import marimo as mo
+count = mo.ui.slider(1, 20, value=5, label=&quot;Count&quot;)
+count
+</code></pre>
+<pre><code class="language-python">list(range(count.value))
+</code></pre>
+<p>Reactive mode reruns descendants of the defining cell after a value changes. Linear mode updates .value without rerunning code. Widgets belong to a kernel generation; controls from a stopped kernel require rerunning their cell.</p>
+<p>Native controls: slider, range_slider, number, text, text_area, checkbox, switch, dropdown, radio, multiselect, button, run_button, date, table selection, array, dictionary, form. Text and option counts are bounded; numeric bounds are validated. Tables show at most 1,000 rows. Forms submit their child values explicitly.</p>
+<p>Layout specs are inert data; the page creates its own controls. Unsupported kinds and oversized specs are rejected. Callbacks execute in the Python kernel. Complex nested form/container value aggregation is a limited compatibility subset, not a complete marimo UI model.</p>
+</main><!-- source:0c0b6772184818f599091e845553b2c50a53364cc16a9cdc3c3bda28fb4c7b89 --></body></html>

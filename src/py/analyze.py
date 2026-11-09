@@ -13,6 +13,9 @@ BUILTINS = set(dir(builtins)) | {'display', 'get_ipython', '__name__', '__file__
 def analyze(source):
     try:
         transformed = transform(source)
+        analysis_source = re.sub(r'^(\s*)%(?:time|timeit)\s+(.+)$', r'\1\2', source, flags=re.M)
+        if analysis_source != source:
+            transformed = transform(analysis_source)
         tree = ast.parse(transformed)
         table = symtable.symtable(transformed, '<cell>', 'exec')
         class Bindings(ast.NodeVisitor):
@@ -46,7 +49,7 @@ def analyze(source):
         deleted = {n.id for node in ast.walk(tree) if isinstance(node, ast.Delete) for n in ast.walk(node) if isinstance(n, ast.Name)}
         dynamic = any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) or isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('exec', 'globals') for n in ast.walk(tree))
         public = lambda names: sorted(n for n in names if not n.startswith('_'))
-        return {'defs': public(defs), 'refs': public(refs - BUILTINS), 'deletes': public(deleted), 'dynamic': dynamic}
+        return {'defs': [] if dynamic else public(defs), 'refs': public(refs - BUILTINS), 'deletes': public(deleted), 'dynamic': dynamic}
     except (SyntaxError, ValueError) as error:
         return {'defs': [], 'refs': [], 'deletes': [], 'error': str(error)}
 

@@ -1,0 +1,225 @@
+[
+  {
+    "id": "welcome",
+    "title": "Welcome to Notebook Online",
+    "description": "Markdown, Python and reactive dependencies.",
+    "guide": "getting-started",
+    "tags": [
+      "Python",
+      "Reactive"
+    ],
+    "file": "welcome.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "slider-plot",
+    "title": "A slider, a curve",
+    "description": "A native slider drives a matplotlib figure.",
+    "guide": "widgets",
+    "tags": [
+      "Python",
+      "Widgets"
+    ],
+    "file": "slider-plot.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "linear",
+    "title": "Execution order matters",
+    "description": "Manual execution counts, shared state and restart.",
+    "guide": "execution",
+    "tags": [
+      "Python",
+      "Linear"
+    ],
+    "file": "linear.qmd",
+    "settings": {
+      "mode": "linear",
+      "autorun": false,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "pandas",
+    "title": "A small data exploration",
+    "description": "Explore a pandas table and summary statistics.",
+    "guide": "python",
+    "tags": [
+      "Python",
+      "Data"
+    ],
+    "file": "pandas.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "sql",
+    "title": "SQL meets Python",
+    "description": "Query a Python dataframe with DuckDB, then plot it.",
+    "guide": "sql",
+    "tags": [
+      "Python",
+      "SQL"
+    ],
+    "file": "sql.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "polars",
+    "title": "A SQL join with Polars",
+    "description": "Join two Polars frames through DuckDB.",
+    "guide": "sql",
+    "tags": [
+      "Python",
+      "SQL",
+      "Data"
+    ],
+    "file": "polars.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "form",
+    "title": "Choose a table slice",
+    "description": "A submitted form filters a dataframe.",
+    "guide": "widgets",
+    "tags": [
+      "Python",
+      "Widgets"
+    ],
+    "file": "form.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "math",
+    "title": "Words, tables and equations",
+    "description": "Markdown and KaTeX without executable markup.",
+    "guide": "markdown",
+    "tags": [
+      "Markdown"
+    ],
+    "file": "math.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "r-summary",
+    "title": "R data and graphics",
+    "description": "R source is retained; execution awaits CSP approval.",
+    "guide": "r",
+    "tags": [
+      "R"
+    ],
+    "file": "r-summary.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "two-languages",
+    "title": "Two languages, two namespaces",
+    "description": "Python runs; R is preserved pending approval.",
+    "guide": "r",
+    "tags": [
+      "Python",
+      "R"
+    ],
+    "file": "two-languages.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "jupyter",
+    "title": "From a Jupyter notebook",
+    "description": "An imported fixture with a retained output.",
+    "guide": "formats",
+    "tags": [
+      "Formats",
+      "Linear"
+    ],
+    "file": "jupyter.qmd",
+    "settings": {
+      "mode": "linear",
+      "autorun": false,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "marimo",
+    "title": "From a marimo notebook",
+    "description": "A portable dependency-driven notebook.",
+    "guide": "marimo",
+    "tags": [
+      "Formats",
+      "Reactive"
+    ],
+    "file": "marimo.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "autodiff",
+    "title": "A tiny differentiation engine",
+    "description": "Build a small computational graph and backpropagate.",
+    "guide": "python",
+    "tags": [
+      "Python",
+      "Learning"
+    ],
+    "file": "autodiff.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": ""
+    }
+  },
+  {
+    "id": "input",
+    "title": "Input, one line at a time",
+    "description": "Provide lines to Python input() and share them.",
+    "guide": "python",
+    "tags": [
+      "Python",
+      "Input"
+    ],
+    "file": "input.qmd",
+    "settings": {
+      "mode": "reactive",
+      "autorun": true,
+      "stdin": "Ada\n21\n"
+    }
+  }
+]

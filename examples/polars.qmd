@@ -1,0 +1,14 @@
+# A SQL join with Polars
+
+DuckDB reads registered pandas, Polars and Arrow tables.
+
+```{python}
+import polars as pl
+people = pl.DataFrame({"id": [1, 2], "name": ["Ada", "Grace"]})
+results = pl.DataFrame({"id": [1, 2], "score": [95, 98]})
+```
+
+```{sql}
+#| output: joined
+select name, score from people join results using(id) order by name
+```

@@ -1,0 +1,9 @@
+# R data and graphics
+
+R execution is disabled by the owner in this build. Source still imports and exports without being executed.
+
+```{r}
+values <- data.frame(x = 1:5, y = c(2, 4, 5, 8, 11))
+summary(values)
+plot(values$x, values$y, type = "b")
+```

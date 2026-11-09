@@ -1,0 +1,13 @@
+# Two languages, two namespaces
+
+Python and R have separate namespaces. There is no implicit data exchange. R execution is disabled in this build.
+
+```{python}
+message = "Hello from Python"
+message
+```
+
+```{r}
+message <- "Hello from R"
+message
+```
